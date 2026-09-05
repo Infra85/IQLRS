@@ -1,2084 +1,1327 @@
-Intelligent Quantum Learning & Research System
+# Intelligent Quantum Learning & Research System
 
-Database Data Model
+## Database Data Model — Revised Version
 
-Database: PostgreSQL
-Purpose: Data model for the AI-powered interactive quantum computing learning, simulation, assessment, progress, instructor, and collaboration platform.
+**Database:** PostgreSQL  
+**ORM:** SQLAlchemy  
+**Purpose:** Database model for the AI-powered interactive quantum-computing learning and research platform.
 
-The model supports the workflow:
+### Core workflow
 
-Learn → Build → Code → Simulate → Visualize → AI Guidance → Assess → Track Progress
+> **Learn → Build → Code → Simulate → Visualize → AI Guidance → Assess → Track Progress**
 
-1. Entity Overview
+This model is based on the project requirements, architecture, roadmap, MVP scope, collaboration requirements, gamification requirements, and the previous data-model decisions.
 
-Core Entities
+---
 
-users
+# 1. Design Goals
 
-courses
+The database should support:
 
-learning_modules
+- Student, instructor, researcher, and administrator accounts
+- Courses and structured learning modules
+- Module progress and weak-area tracking
+- Quizzes, coding challenges, and circuit-building assessments
+- Quantum circuit creation and version history
+- Visual circuit building using gates
+- Quantum-code submissions and execution
+- Qiskit, PennyLane, and Cirq simulation backends
+- Measurement counts, probabilities, state vectors, Bloch data, and circuit diagrams
+- AI tutor conversations with circuit/code/simulation context
+- AI debugging and optimization context
+- Personalized learning recommendations
+- Instructor assignments and learner analytics
+- XP, levels, streaks, and badges
+- Sharing circuits, code, and projects
+- Projects with multiple contributors
+- Multiple roles for one person, with exactly one primary role and optional secondary roles
 
-module_progress
+---
 
-Assessment Entities
+# 2. Entity Overview
 
-assessments
+## User & Access
 
-questions
+1. `users`
+2. `roles`
+3. `user_roles`
 
-question_options
+## Learning
 
-assessment_attempts
+4. `courses`
+5. `learning_modules`
+6. `module_progress`
+7. `learning_recommendations`
 
-question_answers
+## Assessment
 
-coding_challenges
+8. `assessments`
+9. `questions`
+10. `question_options`
+11. `assessment_attempts`
+12. `question_answers`
+13. `coding_challenges`
+14. `code_submissions`
 
-code_submissions
+## Quantum Circuit & Simulation
 
-Quantum Circuit & Simulation Entities
+15. `circuits`
+16. `quantum_gates`
+17. `circuit_gates`
+18. `circuit_versions`
+19. `simulation_runs`
+20. `simulation_results`
 
-circuits
+## AI Tutor
 
-quantum_gates
+21. `ai_conversations`
+22. `ai_messages`
 
-circuit_gates
+## Gamification
 
-circuit_versions
+23. `user_gamification`
+24. `badges`
+25. `user_badges`
 
-simulation_runs
+## Courses & Instructor
 
-simulation_results
+26. `course_enrollments`
+27. `course_assignments`
 
-AI Entities
+## Projects, Contributions & Collaboration
 
-ai_conversations
+28. `projects`
+29. `project_members`
+30. `contributions`
+31. `contribution_members`
+32. `shared_resources`
 
-ai_messages
+---
 
-learning_recommendations
+# 3. High-Level ER Structure
 
-Gamification Entities
-
-user_gamification
-
-badges
-
-user_badges
-
-Instructor & Collaboration Entities
-
-course_enrollments
-
-course_assignments
-
-shared_resources
-
-2. Entity Relationship Diagram
-
-                                      ┌──────────────────┐
-                                      │      USERS       │
-                                      │──────────────────│
-                                      │ PK user_id       │
-                                      │ name             │
-                                      │ email            │
-                                      │ password_hash     │
-                                      │ role             │
-                                      └────────┬─────────┘
-                                               │
-              ┌────────────────────────────────┼────────────────────────────────┐
-              │                                │                                │
-              │                                │                                │
-              ▼                                ▼                                ▼
-      ┌─────────────────┐              ┌─────────────────┐              ┌──────────────────┐
-      │     COURSES     │              │    CIRCUITS     │              │ AI_CONVERSATIONS │
-      └────────┬────────┘              └────────┬────────┘              └────────┬─────────┘
-               │                               │                                │
-               ▼                               ├──────────────┐                 ▼
-      ┌─────────────────┐                      │              │          ┌──────────────────┐
-      │ LEARNING_MODULES│                      ▼              ▼          │    AI_MESSAGES   │
-      └────────┬────────┘              ┌──────────────┐ ┌──────────────┐ └──────────────────┘
-               │                       │CIRCUIT_GATES │ │CIRCUIT_      │
-               │                       └──────┬───────┘ │VERSIONS       │
-               │                              │         └──────────────┘
-               ├──────────────┐               ▼
-               │              │       ┌────────────────┐
-               ▼              ▼       │ QUANTUM_GATES  │
-      ┌────────────────┐ ┌──────────────┐└────────────────┘
-      │MODULE_PROGRESS │ │ ASSESSMENTS  │
-      └────────────────┘ └──────┬───────┘
-                                │
-                 ┌──────────────┼──────────────┐
-                 ▼              ▼              ▼
-          ┌─────────────┐ ┌───────────┐ ┌──────────────────┐
-          │  QUESTIONS  │ │ CODING_   │ │ASSESSMENT_ATTEMPTS│
-          └──────┬──────┘ │ CHALLENGES│ └────────┬─────────┘
-                 │        └─────┬─────┘          │
-                 ▼              ▼                ▼
-        ┌────────────────┐ ┌───────────────┐ ┌────────────────┐
-        │QUESTION_OPTIONS│ │CODE_SUBMISSIONS│ │QUESTION_ANSWERS│
-        └────────────────┘ └───────────────┘ └────────────────┘
+```text
+                                ┌───────────────┐
+                                │    USERS      │
+                                └───────┬───────┘
+                                        │
+                ┌───────────────────────┼────────────────────────┐
+                │                       │                        │
+                ▼                       ▼                        ▼
+        ┌───────────────┐       ┌───────────────┐        ┌────────────────┐
+        │ USER_ROLES    │       │   COURSES     │        │   CIRCUITS     │
+        └───────┬───────┘       └───────┬───────┘        └───────┬────────┘
+                │                       │                        │
+                ▼                       ▼                        ├──────────────┐
+        ┌───────────────┐       ┌───────────────┐                │              │
+        │    ROLES      │       │   MODULES     │                ▼              ▼
+        └───────────────┘       └───────┬───────┘        ┌──────────────┐ ┌───────────────┐
+                                        │                │CIRCUIT_GATES │ │CIRCUIT_VERSIONS│
+                           ┌────────────┼─────────┐      └──────┬───────┘ └───────────────┘
+                           ▼            ▼         ▼             │
+                    MODULE_PROGRESS ASSESSMENTS CODING_        ▼
+                                             CHALLENGES  ┌───────────────┐
+                           │            │         │       │ QUANTUM_GATES │
+                           │            ▼         ▼       └───────────────┘
+                           │       QUESTIONS CODE_SUBMISSIONS
+                           │            │
+                           │            ▼
+                           │      QUESTION_OPTIONS
+                           │
+                           ▼
+                    LEARNING_RECOMMENDATIONS
 
 
- USERS ───────────────< COURSE_ENROLLMENTS >────────────── COURSES
- USERS ───────────────< COURSE_ASSIGNMENTS >────────────── COURSES
+ USERS ───────< COURSE_ENROLLMENTS >────── COURSES
+ USERS ───────< COURSE_ASSIGNMENTS >────── COURSES
 
- CIRCUITS ────────────< SIMULATION_RUNS ────────────────< SIMULATION_RESULTS
+ CIRCUITS ────< SIMULATION_RUNS ────────< SIMULATION_RESULTS
+ USERS ───────< AI_CONVERSATIONS ────────< AI_MESSAGES
+ CIRCUITS ────────┘             │
+                                └── context_data
 
- USERS ───────────────< LEARNING_RECOMMENDATIONS >────── LEARNING_MODULES
+ USERS ───────1 USER_GAMIFICATION
+ USERS ───────< USER_BADGES >──────────── BADGES
 
- USERS ───────────────1 USER_GAMIFICATION
- USERS ───────────────< USER_BADGES >─────────────────── BADGES
+ USERS ───────< PROJECT_MEMBERS >──────── PROJECTS
+ PROJECTS ────< CONTRIBUTIONS
+ USERS ───────< CONTRIBUTION_MEMBERS >── CONTRIBUTIONS
 
- USERS ───────────────< SHARED_RESOURCES
- CIRCUITS ────────────< SHARED_RESOURCES
+ USERS ───────< SHARED_RESOURCES
+ PROJECTS ────< SHARED_RESOURCES
+ CIRCUITS ────< SHARED_RESOURCES
+```
 
-3. users
+---
+
+# 4. Common PostgreSQL Conventions
+
+### Primary keys
+
+Use UUIDs:
+
+```sql
+UUID PRIMARY KEY DEFAULT gen_random_uuid()
+```
+
+### Timestamps
+
+Use:
+
+```sql
+TIMESTAMP WITH TIME ZONE
+```
+
+for application timestamps.
+
+### JSONB
+
+Use `JSONB` where the structure is dynamic, especially:
+
+- Circuit representation
+- Gate parameters
+- Simulation outputs
+- AI context
+- Challenge expected output
+
+---
+
+# 5. users
 
 Stores students, instructors, researchers, and administrators.
 
-Column
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `user_id` | UUID | PK | Unique user ID |
+| `name` | VARCHAR(100) | NOT NULL | User name |
+| `email` | VARCHAR(255) | UNIQUE, NOT NULL | Login email |
+| `password_hash` | TEXT | NULL | Hashed password |
+| `avatar_url` | TEXT | NULL | Profile image |
+| `created_at` | TIMESTAMPTZ | NOT NULL | Account creation |
+| `updated_at` | TIMESTAMPTZ | NOT NULL | Last update |
 
-Type
+> User roles are handled through `roles` and `user_roles` instead of storing only one role in `users`.
 
-Constraints
+This allows one person to have multiple roles.
 
-Description
+---
 
-user_id
+# 6. roles
 
-UUID
+Master list of available roles.
 
-PK
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `role_id` | UUID | PK | Unique role ID |
+| `name` | VARCHAR(50) | UNIQUE, NOT NULL | Role name |
+| `description` | TEXT | NULL | Role description |
 
-Unique user ID
+Recommended roles:
 
-name
+- `student`
+- `instructor`
+- `researcher`
+- `admin`
+- `team_lead`
+- `frontend_developer`
+- `backend_developer`
+- `database_developer`
+- `ai_developer`
+- `quantum_developer`
 
-VARCHAR(100)
+---
 
-NOT NULL
+# 7. user_roles
 
-User's name
+Many-to-many relationship between users and roles.
 
-email
+This implements the agreed rule:
 
-VARCHAR(255)
+> **One primary role + zero or more secondary roles.**
 
-UNIQUE, NOT NULL
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `user_role_id` | UUID | PK | Unique record |
+| `user_id` | UUID | FK → users.user_id | User |
+| `role_id` | UUID | FK → roles.role_id | Assigned role |
+| `is_primary` | BOOLEAN | NOT NULL, DEFAULT FALSE | Whether this is the primary role |
+| `assigned_at` | TIMESTAMPTZ | NOT NULL | Assignment time |
 
-Login email
+### Rules
 
-password_hash
-
-TEXT
-
-NULL
-
-Hashed password
-
-role
-
-VARCHAR(20)
-
-NOT NULL
-
-student/instructor/researcher/admin
-
-avatar_url
-
-TEXT
-
-NULL
-
-Profile image
-
-created_at
-
-TIMESTAMP
-
-NOT NULL
-
-Account creation time
-
-updated_at
-
-TIMESTAMP
-
-NOT NULL
-
-Last update time
-
-4. courses
-
-Stores courses created by instructors.
-
-Column
-
-Type
-
-Constraints
-
-Description
-
-course_id
-
-UUID
-
-PK
-
-Unique course
-
-title
-
-VARCHAR(200)
-
-NOT NULL
-
-Course title
-
-description
-
-TEXT
-
-NULL
-
-Course description
-
-difficulty
-
-VARCHAR(30)
-
-NULL
-
-Beginner/Intermediate/Advanced
-
-created_by
-
-UUID
-
-FK → users.user_id
-
-Instructor
-
-is_published
-
-BOOLEAN
-
-DEFAULT FALSE
-
-Publication status
-
-created_at
-
-TIMESTAMP
-
-NOT NULL
-
-Creation time
-
-updated_at
-
-TIMESTAMP
-
-NOT NULL
-
-Last update
-
-5. learning_modules
-
-Stores structured learning content.
-
-Column
-
-Type
-
-Constraints
-
-Description
-
-module_id
-
-UUID
-
-PK
-
-Unique module
-
-course_id
-
-UUID
-
-FK → courses.course_id
-
-Parent course
-
-title
-
-VARCHAR(200)
-
-NOT NULL
-
-Module title
-
-description
-
-TEXT
-
-NULL
-
-Module description
-
-content
-
-TEXT
-
-NOT NULL
-
-Learning content
-
-module_order
-
-INTEGER
-
-NOT NULL
-
-Position in course
-
-difficulty
-
-VARCHAR(30)
-
-NULL
-
-Module difficulty
-
-estimated_minutes
-
-INTEGER
-
-NULL
-
-Estimated completion time
-
-created_at
-
-TIMESTAMP
-
-NOT NULL
-
-Creation time
-
-updated_at
-
-TIMESTAMP
-
-NOT NULL
-
-Last update
-
-Example modules:
-
-Classical vs Quantum Computing
-
-Qubits, Superposition & Measurement
-
-Quantum Gates
-
-Entanglement & Bell States
-
-Deutsch-Jozsa Algorithm
-
-Grover's Search
-
-Quantum Teleportation
-
-Shor's Algorithm
-
-6. module_progress
-
-Tracks individual learner progress through modules.
-
-Column
-
-Type
-
-Constraints
-
-progress_id
-
-UUID
-
-PK
-
-user_id
-
-UUID
-
-FK → users.user_id
-
-module_id
-
-UUID
-
-FK → learning_modules.module_id
-
-status
-
-VARCHAR(30)
-
-NOT NULL
-
-completion_pct
-
-NUMERIC(5,2)
-
-DEFAULT 0
-
-started_at
-
-TIMESTAMP
-
-NULL
-
-completed_at
-
-TIMESTAMP
-
-NULL
-
-last_accessed_at
-
-TIMESTAMP
-
-NULL
-
-Recommended status values:
-
-not_started
-in_progress
-completed
-
-Unique constraint:
-
-(user_id, module_id)
-
-7. assessments
-
-Parent table for quizzes and practical assessments.
-
-Column
-
-Type
-
-Constraints
-
-assessment_id
-
-UUID
-
-PK
-
-module_id
-
-UUID
-
-FK → learning_modules.module_id
-
-title
-
-VARCHAR(200)
-
-NOT NULL
-
-description
-
-TEXT
-
-NULL
-
-assessment_type
-
-VARCHAR(30)
-
-NOT NULL
-
-max_score
-
-NUMERIC(6,2)
-
-NOT NULL
-
-passing_score
-
-NUMERIC(6,2)
-
-NULL
-
-created_at
-
-TIMESTAMP
-
-NOT NULL
-
-Assessment types:
-
-quiz
-coding_challenge
-circuit_challenge
-
-8. questions
-
-Stores questions belonging to assessments.
-
-Column
-
-Type
-
-Constraints
-
-question_id
-
-UUID
-
-PK
-
-assessment_id
-
-UUID
-
-FK → assessments.assessment_id
-
-question_text
-
-TEXT
-
-NOT NULL
-
-question_type
-
-VARCHAR(30)
-
-NOT NULL
-
-points
-
-NUMERIC(6,2)
-
-NOT NULL
-
-question_order
-
-INTEGER
-
-NOT NULL
-
-Question types can include:
-
-mcq
-true_false
-short_answer
-
-9. question_options
-
-Stores choices for multiple-choice questions.
-
-Column
-
-Type
-
-Constraints
-
-option_id
-
-UUID
-
-PK
-
-question_id
-
-UUID
-
-FK → questions.question_id
-
-option_text
-
-TEXT
-
-NOT NULL
-
-is_correct
-
-BOOLEAN
-
-NOT NULL
-
-10. assessment_attempts
-
-Stores each student's assessment attempt.
-
-Column
-
-Type
-
-Constraints
-
-attempt_id
-
-UUID
-
-PK
-
-assessment_id
-
-UUID
-
-FK → assessments.assessment_id
-
-user_id
-
-UUID
-
-FK → users.user_id
-
-score
-
-NUMERIC(6,2)
-
-NULL
-
-max_score
-
-NUMERIC(6,2)
-
-NOT NULL
-
-percentage
-
-NUMERIC(5,2)
-
-NULL
-
-status
-
-VARCHAR(30)
-
-NOT NULL
-
-started_at
-
-TIMESTAMP
-
-NOT NULL
-
-submitted_at
-
-TIMESTAMP
-
-NULL
-
-11. question_answers
-
-Stores answers to individual questions.
-
-Column
-
-Type
-
-Constraints
-
-answer_id
-
-UUID
-
-PK
-
-attempt_id
-
-UUID
-
-FK → assessment_attempts.attempt_id
-
-question_id
-
-UUID
-
-FK → questions.question_id
-
-selected_option_id
-
-UUID
-
-FK → question_options.option_id, NULL
-
-answer_text
-
-TEXT
-
-NULL
-
-is_correct
-
-BOOLEAN
-
-NULL
-
-points_earned
-
-NUMERIC(6,2)
-
-NULL
-
-12. coding_challenges
-
-Stores programming-based quantum challenges.
-
-Column
-
-Type
-
-Constraints
-
-challenge_id
-
-UUID
-
-PK
-
-module_id
-
-UUID
-
-FK → learning_modules.module_id
-
-title
-
-VARCHAR(200)
-
-NOT NULL
-
-description
-
-TEXT
-
-NULL
-
-instructions
-
-TEXT
-
-NOT NULL
-
-framework
-
-VARCHAR(30)
-
-NOT NULL
-
-starter_code
-
-TEXT
-
-NULL
-
-expected_output
-
-JSONB
-
-NULL
-
-test_code
-
-TEXT
-
-NULL
-
-difficulty
-
-VARCHAR(30)
-
-NULL
-
-max_score
-
-NUMERIC(6,2)
-
-NOT NULL
-
-created_at
-
-TIMESTAMP
-
-NOT NULL
-
-Supported frameworks:
-
-qiskit
-pennylane
-cirq
-
-13. code_submissions
-
-Stores code submitted by learners.
-
-Column
-
-Type
-
-Constraints
-
-submission_id
-
-UUID
-
-PK
-
-challenge_id
-
-UUID
-
-FK → coding_challenges.challenge_id
-
-user_id
-
-UUID
-
-FK → users.user_id
-
-code
-
-TEXT
-
-NOT NULL
-
-framework
-
-VARCHAR(30)
-
-NOT NULL
-
-execution_output
-
-TEXT
-
-NULL
-
-error_message
-
-TEXT
-
-NULL
-
-score
-
-NUMERIC(6,2)
-
-NULL
-
-passed
-
-BOOLEAN
-
-NULL
-
-execution_time_ms
-
-INTEGER
-
-NULL
-
-submitted_at
-
-TIMESTAMP
-
-NOT NULL
-
-14. circuits
-
-Stores quantum circuits created by users.
-
-Column
-
-Type
-
-Constraints
-
-circuit_id
-
-UUID
-
-PK
-
-user_id
-
-UUID
-
-FK → users.user_id
-
-name
-
-VARCHAR(200)
-
-NOT NULL
-
-description
-
-TEXT
-
-NULL
-
-num_qubits
-
-INTEGER
-
-NOT NULL
-
-num_classical_bits
-
-INTEGER
-
-DEFAULT 0
-
-source_type
-
-VARCHAR(20)
-
-NOT NULL
-
-framework
-
-VARCHAR(30)
-
-NULL
-
-circuit_data
-
-JSONB
-
-NOT NULL
-
-created_at
-
-TIMESTAMP
-
-NOT NULL
-
-updated_at
-
-TIMESTAMP
-
-NOT NULL
-
-source_type:
-
-visual
-code
-
-circuit_data stores the React Flow / circuit representation.
+- A user can have many roles.
+- A user must have at most one `is_primary = TRUE` role.
+- Secondary roles have `is_primary = FALSE`.
+- Unique constraint: `(user_id, role_id)`.
 
 Example:
 
+```text
+Tanuj
+├── Team Lead       → Primary
+└── Database Dev    → Secondary
+```
+
+---
+
+# 8. courses
+
+Stores courses created by instructors.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `course_id` | UUID | PK | Unique course |
+| `title` | VARCHAR(200) | NOT NULL | Course title |
+| `description` | TEXT | NULL | Course description |
+| `difficulty` | VARCHAR(30) | NULL | Beginner/Intermediate/Advanced |
+| `created_by` | UUID | FK → users.user_id | Instructor |
+| `is_published` | BOOLEAN | DEFAULT FALSE | Publication status |
+| `created_at` | TIMESTAMPTZ | NOT NULL | Creation time |
+| `updated_at` | TIMESTAMPTZ | NOT NULL | Last update |
+
+---
+
+# 9. learning_modules
+
+Stores structured learning content inside courses.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `module_id` | UUID | PK | Unique module |
+| `course_id` | UUID | FK → courses.course_id | Parent course |
+| `title` | VARCHAR(200) | NOT NULL | Module title |
+| `description` | TEXT | NULL | Module description |
+| `content` | TEXT | NOT NULL | Learning content |
+| `module_order` | INTEGER | NOT NULL | Position |
+| `difficulty` | VARCHAR(30) | NULL | Difficulty |
+| `estimated_minutes` | INTEGER | NULL | Estimated completion time |
+| `created_at` | TIMESTAMPTZ | NOT NULL | Creation time |
+| `updated_at` | TIMESTAMPTZ | NOT NULL | Last update |
+
+Recommended initial modules:
+
+1. Classical vs Quantum Computing
+2. Qubits, Superposition & Measurement
+3. Quantum Gates
+4. Entanglement & Bell States
+5. Deutsch-Jozsa Algorithm
+6. Grover's Search
+7. Quantum Teleportation
+8. Shor's Algorithm Overview
+
+---
+
+# 10. module_progress
+
+Tracks learner progress through modules.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `progress_id` | UUID | PK | Unique progress record |
+| `user_id` | UUID | FK → users.user_id | Learner |
+| `module_id` | UUID | FK → learning_modules.module_id | Module |
+| `status` | VARCHAR(30) | NOT NULL | not_started/in_progress/completed |
+| `completion_pct` | NUMERIC(5,2) | DEFAULT 0 | Completion percentage |
+| `started_at` | TIMESTAMPTZ | NULL | Start time |
+| `completed_at` | TIMESTAMPTZ | NULL | Completion time |
+| `last_accessed_at` | TIMESTAMPTZ | NULL | Last activity |
+
+**Unique:** `(user_id, module_id)`
+
+---
+
+# 11. learning_recommendations
+
+Stores personalized learning recommendations.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `recommendation_id` | UUID | PK | Unique recommendation |
+| `user_id` | UUID | FK → users.user_id | Learner |
+| `module_id` | UUID | FK → learning_modules.module_id | Recommended module |
+| `reason` | TEXT | NOT NULL | Why it was recommended |
+| `priority` | INTEGER | NULL | Recommendation priority |
+| `status` | VARCHAR(30) | NOT NULL | pending/completed/dismissed |
+| `created_at` | TIMESTAMPTZ | NOT NULL | Created time |
+| `completed_at` | TIMESTAMPTZ | NULL | Completion time |
+
+Example:
+
+```text
+Weak area: Entanglement
+        ↓
+Recommend:
+- Review Entanglement module
+- Try Bell State tutorial
+- Complete practice questions
+```
+
+---
+
+# 12. assessments
+
+Parent table for quizzes and practical assessments.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `assessment_id` | UUID | PK | Unique assessment |
+| `module_id` | UUID | FK → learning_modules.module_id | Related module |
+| `title` | VARCHAR(200) | NOT NULL | Assessment title |
+| `description` | TEXT | NULL | Description |
+| `assessment_type` | VARCHAR(30) | NOT NULL | quiz/coding_challenge/circuit_challenge |
+| `max_score` | NUMERIC(6,2) | NOT NULL | Maximum score |
+| `passing_score` | NUMERIC(6,2) | NULL | Passing score |
+| `created_at` | TIMESTAMPTZ | NOT NULL | Creation time |
+
+---
+
+# 13. questions
+
+Stores questions belonging to assessments.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `question_id` | UUID | PK | Unique question |
+| `assessment_id` | UUID | FK → assessments.assessment_id | Assessment |
+| `question_text` | TEXT | NOT NULL | Question |
+| `question_type` | VARCHAR(30) | NOT NULL | mcq/true_false/short_answer |
+| `points` | NUMERIC(6,2) | NOT NULL | Question points |
+| `question_order` | INTEGER | NOT NULL | Question position |
+
+---
+
+# 14. question_options
+
+Stores answer choices for multiple-choice questions.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `option_id` | UUID | PK | Unique option |
+| `question_id` | UUID | FK → questions.question_id | Question |
+| `option_text` | TEXT | NOT NULL | Choice |
+| `is_correct` | BOOLEAN | NOT NULL | Correct-answer flag |
+
+---
+
+# 15. assessment_attempts
+
+Stores every learner's attempt.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `attempt_id` | UUID | PK | Unique attempt |
+| `assessment_id` | UUID | FK → assessments.assessment_id | Assessment |
+| `user_id` | UUID | FK → users.user_id | Learner |
+| `score` | NUMERIC(6,2) | NULL | Score |
+| `max_score` | NUMERIC(6,2) | NOT NULL | Maximum score |
+| `percentage` | NUMERIC(5,2) | NULL | Percentage |
+| `status` | VARCHAR(30) | NOT NULL | in_progress/submitted |
+| `started_at` | TIMESTAMPTZ | NOT NULL | Start time |
+| `submitted_at` | TIMESTAMPTZ | NULL | Submission time |
+
+---
+
+# 16. question_answers
+
+Stores answers to individual questions.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `answer_id` | UUID | PK | Unique answer |
+| `attempt_id` | UUID | FK → assessment_attempts.attempt_id | Attempt |
+| `question_id` | UUID | FK → questions.question_id | Question |
+| `selected_option_id` | UUID | FK → question_options.option_id, NULL | Selected choice |
+| `answer_text` | TEXT | NULL | Text answer |
+| `is_correct` | BOOLEAN | NULL | Correctness |
+| `points_earned` | NUMERIC(6,2) | NULL | Earned points |
+
+---
+
+# 17. coding_challenges
+
+Stores programming-based quantum challenges.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `challenge_id` | UUID | PK | Unique challenge |
+| `module_id` | UUID | FK → learning_modules.module_id | Related module |
+| `title` | VARCHAR(200) | NOT NULL | Challenge title |
+| `description` | TEXT | NULL | Description |
+| `instructions` | TEXT | NOT NULL | Instructions |
+| `framework` | VARCHAR(30) | NOT NULL | qiskit/pennylane/cirq |
+| `starter_code` | TEXT | NULL | Starter code |
+| `expected_output` | JSONB | NULL | Expected result |
+| `test_code` | TEXT | NULL | Validation tests |
+| `difficulty` | VARCHAR(30) | NULL | Difficulty |
+| `max_score` | NUMERIC(6,2) | NOT NULL | Maximum score |
+| `created_at` | TIMESTAMPTZ | NOT NULL | Creation time |
+
+---
+
+# 18. code_submissions
+
+Stores learner quantum-code submissions.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `submission_id` | UUID | PK | Unique submission |
+| `challenge_id` | UUID | FK → coding_challenges.challenge_id | Challenge |
+| `user_id` | UUID | FK → users.user_id | Learner |
+| `code` | TEXT | NOT NULL | Submitted code |
+| `framework` | VARCHAR(30) | NOT NULL | Qiskit/PennyLane/Cirq |
+| `execution_output` | TEXT | NULL | Output |
+| `error_message` | TEXT | NULL | Execution error |
+| `score` | NUMERIC(6,2) | NULL | Score |
+| `passed` | BOOLEAN | NULL | Whether tests passed |
+| `execution_time_ms` | INTEGER | NULL | Execution time |
+| `submitted_at` | TIMESTAMPTZ | NOT NULL | Submission time |
+
+---
+
+# 19. circuits
+
+Stores quantum circuits created by users.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `circuit_id` | UUID | PK | Unique circuit |
+| `user_id` | UUID | FK → users.user_id | Owner |
+| `name` | VARCHAR(200) | NOT NULL | Circuit name |
+| `description` | TEXT | NULL | Description |
+| `num_qubits` | INTEGER | NOT NULL | Number of qubits |
+| `num_classical_bits` | INTEGER | DEFAULT 0 | Classical bits |
+| `source_type` | VARCHAR(20) | NOT NULL | visual/code |
+| `framework` | VARCHAR(30) | NULL | Qiskit/PennyLane/Cirq |
+| `circuit_data` | JSONB | NOT NULL | Circuit representation |
+| `created_at` | TIMESTAMPTZ | NOT NULL | Creation time |
+| `updated_at` | TIMESTAMPTZ | NOT NULL | Last update |
+
+### Example `circuit_data`
+
+```json
 {
-  "nodes": [
+  "num_qubits": 2,
+  "gates": [
     {
       "gate": "H",
       "qubit": 0,
-      "position": 1
+      "position": 0
     },
     {
       "gate": "CNOT",
       "control": 0,
       "target": 1,
-      "position": 2
+      "position": 1
     }
   ]
 }
+```
 
-15. quantum_gates
+---
+
+# 20. quantum_gates
 
 Master catalog of supported quantum gates.
 
-Column
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `gate_id` | UUID | PK | Unique gate |
+| `name` | VARCHAR(50) | UNIQUE, NOT NULL | Gate name |
+| `symbol` | VARCHAR(20) | NOT NULL | Display symbol |
+| `description` | TEXT | NULL | Gate explanation |
+| `num_qubits` | INTEGER | NOT NULL | Number of affected qubits |
+| `matrix` | JSONB | NULL | Gate matrix |
 
-Type
+Initial gates:
 
-Constraints
+- H
+- X
+- Y
+- Z
+- CNOT
+- Toffoli
+- SWAP
+- Measurement
 
-gate_id
+---
 
-UUID
+# 21. circuit_gates
 
-PK
+Stores actual gates placed inside circuits.
 
-name
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `circuit_gate_id` | UUID | PK | Unique placement |
+| `circuit_id` | UUID | FK → circuits.circuit_id | Circuit |
+| `gate_id` | UUID | FK → quantum_gates.gate_id | Gate |
+| `qubit_position` | INTEGER | NOT NULL | Main qubit |
+| `control_qubit` | INTEGER | NULL | Control qubit |
+| `target_qubit` | INTEGER | NULL | Target qubit |
+| `gate_order` | INTEGER | NOT NULL | Order in circuit |
+| `parameters` | JSONB | NULL | Gate parameters |
 
-VARCHAR(50)
+Example:
 
-UNIQUE, NOT NULL
-
-symbol
-
-VARCHAR(20)
-
-NOT NULL
-
-description
-
-TEXT
-
-NULL
-
-num_qubits
-
-INTEGER
-
-NOT NULL
-
-matrix
-
-JSONB
-
-NULL
-
-Examples:
-
-H
-X
-Y
-Z
-CNOT
-Toffoli
-SWAP
-Measurement
-
-16. circuit_gates
-
-Stores the actual gates placed inside circuits.
-
-Column
-
-Type
-
-Constraints
-
-circuit_gate_id
-
-UUID
-
-PK
-
-circuit_id
-
-UUID
-
-FK → circuits.circuit_id
-
-gate_id
-
-UUID
-
-FK → quantum_gates.gate_id
-
-qubit_position
-
-INTEGER
-
-NOT NULL
-
-control_qubit
-
-INTEGER
-
-NULL
-
-target_qubit
-
-INTEGER
-
-NULL
-
-gate_order
-
-INTEGER
-
-NOT NULL
-
-parameters
-
-JSONB
-
-NULL
-
-This supports circuits such as:
-
+```text
 Q0 ── H ──●── M
           │
 Q1 ───────X── M
+```
 
-17. circuit_versions
+---
+
+# 22. circuit_versions
 
 Maintains circuit/code history.
 
-Column
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `version_id` | UUID | PK | Version ID |
+| `circuit_id` | UUID | FK → circuits.circuit_id | Circuit |
+| `version_number` | INTEGER | NOT NULL | Version number |
+| `source_type` | VARCHAR(20) | NOT NULL | visual/code |
+| `code` | TEXT | NULL | Code snapshot |
+| `circuit_data` | JSONB | NULL | Circuit snapshot |
+| `created_by` | UUID | FK → users.user_id | User |
+| `created_at` | TIMESTAMPTZ | NOT NULL | Creation time |
 
-Type
+**Unique:** `(circuit_id, version_number)`
 
-Constraints
+---
 
-version_id
-
-UUID
-
-PK
-
-circuit_id
-
-UUID
-
-FK → circuits.circuit_id
-
-version_number
-
-INTEGER
-
-NOT NULL
-
-source_type
-
-VARCHAR(20)
-
-NOT NULL
-
-code
-
-TEXT
-
-NULL
-
-circuit_data
-
-JSONB
-
-NULL
-
-created_by
-
-UUID
-
-FK → users.user_id
-
-created_at
-
-TIMESTAMP
-
-NOT NULL
-
-Unique constraint:
-
-(circuit_id, version_number)
-
-18. simulation_runs
+# 23. simulation_runs
 
 Stores executions of quantum circuits.
 
-Column
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `simulation_id` | UUID | PK | Simulation ID |
+| `circuit_id` | UUID | FK → circuits.circuit_id | Circuit |
+| `user_id` | UUID | FK → users.user_id | User |
+| `backend` | VARCHAR(50) | NOT NULL | Simulator backend |
+| `shots` | INTEGER | NULL | Number of shots |
+| `status` | VARCHAR(30) | NOT NULL | queued/running/completed/failed |
+| `execution_time_ms` | INTEGER | NULL | Execution time |
+| `started_at` | TIMESTAMPTZ | NOT NULL | Start time |
+| `completed_at` | TIMESTAMPTZ | NULL | Completion |
+| `error_message` | TEXT | NULL | Error |
 
-Type
+Supported backends:
 
-Constraints
+- `qiskit_aer`
+- `pennylane_default_qubit`
+- `cirq_simulator`
 
-simulation_id
+The architecture is modular so additional quantum backends can be added later.
 
-UUID
+---
 
-PK
-
-circuit_id
-
-UUID
-
-FK → circuits.circuit_id
-
-user_id
-
-UUID
-
-FK → users.user_id
-
-backend
-
-VARCHAR(50)
-
-NOT NULL
-
-shots
-
-INTEGER
-
-NULL
-
-status
-
-VARCHAR(30)
-
-NOT NULL
-
-execution_time_ms
-
-INTEGER
-
-NULL
-
-started_at
-
-TIMESTAMP
-
-NOT NULL
-
-completed_at
-
-TIMESTAMP
-
-NULL
-
-error_message
-
-TEXT
-
-NULL
-
-Backends:
-
-qiskit_aer
-pennylane
-cirq
-
-The architecture uses Qiskit Aer, PennyLane, and Cirq through a modular simulator architecture.
-
-19. simulation_results
+# 24. simulation_results
 
 Stores simulation outputs.
 
-Column
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `result_id` | UUID | PK | Result ID |
+| `simulation_id` | UUID | FK → simulation_runs.simulation_id | Simulation |
+| `measurement_counts` | JSONB | NULL | Measurement counts |
+| `probabilities` | JSONB | NULL | State probabilities |
+| `state_vector` | JSONB | NULL | State vector |
+| `bloch_data` | JSONB | NULL | Bloch-sphere data |
+| `circuit_diagram` | TEXT | NULL | Rendered diagram |
+| `created_at` | TIMESTAMPTZ | NOT NULL | Creation time |
 
-Type
+Example:
 
-Constraints
-
-result_id
-
-UUID
-
-PK
-
-simulation_id
-
-UUID
-
-FK → simulation_runs.simulation_id
-
-measurement_counts
-
-JSONB
-
-NULL
-
-probabilities
-
-JSONB
-
-NULL
-
-state_vector
-
-JSONB
-
-NULL
-
-bloch_data
-
-JSONB
-
-NULL
-
-circuit_diagram
-
-TEXT
-
-NULL
-
-created_at
-
-TIMESTAMP
-
-NOT NULL
-
-Example measurement_counts:
-
+```json
 {
   "00": 498,
   "11": 502
 }
+```
 
-Example probabilities:
+---
 
-{
-  "00": 0.498,
-  "11": 0.502
-}
+# 25. ai_conversations
 
-20. ai_conversations
+Stores AI Tutor conversations.
 
-Stores AI tutor conversations.
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `conversation_id` | UUID | PK | Conversation ID |
+| `user_id` | UUID | FK → users.user_id | User |
+| `circuit_id` | UUID | FK → circuits.circuit_id, NULL | Related circuit |
+| `title` | VARCHAR(200) | NULL | Conversation title |
+| `created_at` | TIMESTAMPTZ | NOT NULL | Creation time |
+| `updated_at` | TIMESTAMPTZ | NOT NULL | Last update |
 
-Column
+---
 
-Type
+# 26. ai_messages
 
-Constraints
+Stores individual user, assistant, and system messages.
 
-conversation_id
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `message_id` | UUID | PK | Message ID |
+| `conversation_id` | UUID | FK → ai_conversations.conversation_id | Conversation |
+| `sender_type` | VARCHAR(20) | NOT NULL | user/assistant/system |
+| `message` | TEXT | NOT NULL | Message content |
+| `context_data` | JSONB | NULL | AI context |
+| `created_at` | TIMESTAMPTZ | NOT NULL | Creation time |
 
-UUID
+### `context_data` may contain
 
-PK
-
-user_id
-
-UUID
-
-FK → users.user_id
-
-circuit_id
-
-UUID
-
-FK → circuits.circuit_id, NULL
-
-title
-
-VARCHAR(200)
-
-NULL
-
-created_at
-
-TIMESTAMP
-
-NOT NULL
-
-updated_at
-
-TIMESTAMP
-
-NOT NULL
-
-21. ai_messages
-
-Stores individual AI/user messages.
-
-Column
-
-Type
-
-Constraints
-
-message_id
-
-UUID
-
-PK
-
-conversation_id
-
-UUID
-
-FK → ai_conversations.conversation_id
-
-sender_type
-
-VARCHAR(20)
-
-NOT NULL
-
-message
-
-TEXT
-
-NOT NULL
-
-context_data
-
-JSONB
-
-NULL
-
-created_at
-
-TIMESTAMP
-
-NOT NULL
-
-sender_type:
-
-user
-assistant
-system
-
-context_data can store:
-
+```json
 {
   "circuit_id": "uuid",
   "simulation_id": "uuid",
+  "module_id": "uuid",
   "code": "...",
-  "error": "..."
+  "error": "...",
+  "simulation_result": {}
 }
+```
 
-22. learning_recommendations
+This supports the project's context-aware AI Tutor:
 
-Stores personalized learning recommendations.
+```text
+User Question
+      +
+Current Circuit
+      +
+Quantum Code
+      +
+Simulation Result
+      +
+Learning Module
+      +
+Learning Progress
+      ↓
+   AI Tutor
+```
 
-Column
+---
 
-Type
+# 27. user_gamification
 
-Constraints
+Stores learner gamification statistics.
 
-recommendation_id
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `user_id` | UUID | PK, FK → users.user_id | User |
+| `xp` | INTEGER | DEFAULT 0 | Experience points |
+| `level` | INTEGER | DEFAULT 1 | Current level |
+| `current_streak` | INTEGER | DEFAULT 0 | Current streak |
+| `longest_streak` | INTEGER | DEFAULT 0 | Longest streak |
+| `updated_at` | TIMESTAMPTZ | NOT NULL | Last update |
 
-UUID
+---
 
-PK
-
-user_id
-
-UUID
-
-FK → users.user_id
-
-module_id
-
-UUID
-
-FK → learning_modules.module_id
-
-reason
-
-TEXT
-
-NOT NULL
-
-priority
-
-INTEGER
-
-NULL
-
-status
-
-VARCHAR(30)
-
-NOT NULL
-
-created_at
-
-TIMESTAMP
-
-NOT NULL
-
-completed_at
-
-TIMESTAMP
-
-NULL
-
-Example:
-
-User repeatedly performs poorly in Entanglement.
-
-Recommendation:
-Review Entanglement module.
-Try Bell State tutorial.
-Complete practice questions.
-
-23. user_gamification
-
-Stores the user's gamification statistics.
-
-Column
-
-Type
-
-Constraints
-
-user_id
-
-UUID
-
-PK, FK → users.user_id
-
-xp
-
-INTEGER
-
-DEFAULT 0
-
-level
-
-INTEGER
-
-DEFAULT 1
-
-current_streak
-
-INTEGER
-
-DEFAULT 0
-
-longest_streak
-
-INTEGER
-
-DEFAULT 0
-
-updated_at
-
-TIMESTAMP
-
-NOT NULL
-
-24. badges
+# 28. badges
 
 Master list of achievements.
 
-Column
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `badge_id` | UUID | PK | Badge ID |
+| `name` | VARCHAR(100) | UNIQUE, NOT NULL | Badge name |
+| `description` | TEXT | NOT NULL | Badge description |
+| `icon_url` | TEXT | NULL | Badge icon |
+| `requirement_type` | VARCHAR(50) | NOT NULL | Requirement type |
+| `requirement_value` | INTEGER | NULL | Requirement value |
 
-Type
+---
 
-Constraints
-
-badge_id
-
-UUID
-
-PK
-
-name
-
-VARCHAR(100)
-
-UNIQUE, NOT NULL
-
-description
-
-TEXT
-
-NOT NULL
-
-icon_url
-
-TEXT
-
-NULL
-
-requirement_type
-
-VARCHAR(50)
-
-NOT NULL
-
-requirement_value
-
-INTEGER
-
-NULL
-
-25. user_badges
+# 29. user_badges
 
 Many-to-many relationship between users and badges.
 
-Column
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `user_badge_id` | UUID | PK | Record ID |
+| `user_id` | UUID | FK → users.user_id | User |
+| `badge_id` | UUID | FK → badges.badge_id | Badge |
+| `earned_at` | TIMESTAMPTZ | NOT NULL | Earned time |
 
-Type
+**Unique:** `(user_id, badge_id)`
 
-Constraints
+---
 
-user_badge_id
-
-UUID
-
-PK
-
-user_id
-
-UUID
-
-FK → users.user_id
-
-badge_id
-
-UUID
-
-FK → badges.badge_id
-
-earned_at
-
-TIMESTAMP
-
-NOT NULL
-
-Unique constraint:
-
-(user_id, badge_id)
-
-26. course_enrollments
+# 30. course_enrollments
 
 Tracks students enrolled in courses.
 
-Column
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `enrollment_id` | UUID | PK | Enrollment ID |
+| `course_id` | UUID | FK → courses.course_id | Course |
+| `user_id` | UUID | FK → users.user_id | Learner |
+| `status` | VARCHAR(30) | NOT NULL | Enrollment status |
+| `enrolled_at` | TIMESTAMPTZ | NOT NULL | Enrollment time |
 
-Type
+**Unique:** `(course_id, user_id)`
 
-Constraints
+---
 
-enrollment_id
+# 31. course_assignments
 
-UUID
+Allows instructors to assign modules or assessments.
 
-PK
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `assignment_id` | UUID | PK | Assignment ID |
+| `course_id` | UUID | FK → courses.course_id | Course |
+| `module_id` | UUID | FK → learning_modules.module_id, NULL | Assigned module |
+| `assessment_id` | UUID | FK → assessments.assessment_id, NULL | Assigned assessment |
+| `assigned_by` | UUID | FK → users.user_id | Instructor |
+| `due_date` | TIMESTAMPTZ | NULL | Due date |
+| `created_at` | TIMESTAMPTZ | NOT NULL | Creation time |
 
-course_id
+At least one of `module_id` or `assessment_id` should be provided.
 
-UUID
+---
 
-FK → courses.course_id
+# 32. projects
 
-user_id
+Stores collaborative quantum projects.
 
-UUID
+A project can contain circuits, code, and other shared resources.
 
-FK → users.user_id
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `project_id` | UUID | PK | Project ID |
+| `owner_id` | UUID | FK → users.user_id | Project owner |
+| `name` | VARCHAR(200) | NOT NULL | Project name |
+| `description` | TEXT | NULL | Project description |
+| `visibility` | VARCHAR(20) | NOT NULL | private/link/public |
+| `created_at` | TIMESTAMPTZ | NOT NULL | Creation time |
+| `updated_at` | TIMESTAMPTZ | NOT NULL | Last update |
 
-status
+---
 
-VARCHAR(30)
+# 33. project_members
 
-NOT NULL
+Connects multiple users to a project.
 
-enrolled_at
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `project_member_id` | UUID | PK | Membership ID |
+| `project_id` | UUID | FK → projects.project_id | Project |
+| `user_id` | UUID | FK → users.user_id | Contributor |
+| `joined_at` | TIMESTAMPTZ | NOT NULL | Join time |
 
-TIMESTAMP
+**Unique:** `(project_id, user_id)`
 
-NOT NULL
+---
 
-Unique constraint:
+# 34. contributions
 
-(course_id, user_id)
+Represents one logical contribution to a project.
 
-27. course_assignments
+This table is important because **one contribution can be made by multiple people**.
 
-Allows instructors to assign learning content or assessments.
+Examples:
 
-Column
+- Built Bell State circuit
+- Implemented simulation API
+- Added AI circuit explanation
+- Wrote Grover's Search module
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `contribution_id` | UUID | PK | Contribution ID |
+| `project_id` | UUID | FK → projects.project_id | Project |
+| `title` | VARCHAR(200) | NOT NULL | Contribution title |
+| `description` | TEXT | NULL | What was contributed |
+| `contribution_type` | VARCHAR(50) | NOT NULL | code/circuit/content/research/documentation |
+| `created_at` | TIMESTAMPTZ | NOT NULL | Creation time |
+
+---
+
+# 35. contribution_members
+
+Connects one contribution to one or more users.
+
+This solves the earlier issue:
+
+> **What if the same contribution is done by multiple people?**
+
+Do **not** store only one `user_id` inside `contributions`.
+
+Instead:
+
+```text
+CONTRIBUTIONS
+      │
+      ▼
+CONTRIBUTION_MEMBERS
+      │
+      ├── User A
+      ├── User B
+      └── User C
+```
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `contribution_member_id` | UUID | PK | Record ID |
+| `contribution_id` | UUID | FK → contributions.contribution_id | Contribution |
+| `user_id` | UUID | FK → users.user_id | Contributor |
+| `role_in_contribution` | VARCHAR(100) | NULL | What this person did |
+| `created_at` | TIMESTAMPTZ | NOT NULL | Record creation |
+
+**Unique:** `(contribution_id, user_id)`
+
+Example:
+
+```text
+Contribution:
+"Implement Bell State Circuit"
+
+Members:
+- User A → Circuit design
+- User B → Simulation
+- User C → Visualization
+```
+
+---
+
+# 36. shared_resources
+
+Supports sharing circuits, code, and projects.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `share_id` | UUID | PK | Share ID |
+| `user_id` | UUID | FK → users.user_id | Creator |
+| `project_id` | UUID | FK → projects.project_id, NULL | Project |
+| `circuit_id` | UUID | FK → circuits.circuit_id, NULL | Circuit |
+| `resource_type` | VARCHAR(30) | NOT NULL | circuit/code/project |
+| `title` | VARCHAR(200) | NOT NULL | Resource title |
+| `description` | TEXT | NULL | Description |
+| `share_token` | VARCHAR(100) | UNIQUE, NOT NULL | Share link token |
+| `visibility` | VARCHAR(20) | NOT NULL | private/link/public |
+| `created_at` | TIMESTAMPTZ | NOT NULL | Creation time |
+| `expires_at` | TIMESTAMPTZ | NULL | Optional expiration |
+
+---
+
+# 37. Main Relationships
+
+| Parent | Relationship | Child |
+|---|---|---|
+| `users` | 1:N | `user_roles` |
+| `roles` | 1:N | `user_roles` |
+| `users` | 1:N | `courses` |
+| `courses` | 1:N | `learning_modules` |
+| `users` | 1:N | `module_progress` |
+| `learning_modules` | 1:N | `module_progress` |
+| `learning_modules` | 1:N | `assessments` |
+| `assessments` | 1:N | `questions` |
+| `questions` | 1:N | `question_options` |
+| `assessments` | 1:N | `assessment_attempts` |
+| `users` | 1:N | `assessment_attempts` |
+| `assessment_attempts` | 1:N | `question_answers` |
+| `learning_modules` | 1:N | `coding_challenges` |
+| `coding_challenges` | 1:N | `code_submissions` |
+| `users` | 1:N | `code_submissions` |
+| `users` | 1:N | `circuits` |
+| `circuits` | 1:N | `circuit_gates` |
+| `quantum_gates` | 1:N | `circuit_gates` |
+| `circuits` | 1:N | `circuit_versions` |
+| `circuits` | 1:N | `simulation_runs` |
+| `simulation_runs` | 1:1 | `simulation_results` |
+| `users` | 1:N | `ai_conversations` |
+| `ai_conversations` | 1:N | `ai_messages` |
+| `users` | 1:N | `learning_recommendations` |
+| `learning_modules` | 1:N | `learning_recommendations` |
+| `users` | 1:1 | `user_gamification` |
+| `users` | N:M | `badges` through `user_badges` |
+| `users` | N:M | `courses` through `course_enrollments` |
+| `courses` | 1:N | `course_assignments` |
+| `users` | 1:N | `projects` |
+| `projects` | N:M | `users` through `project_members` |
+| `projects` | 1:N | `contributions` |
+| `contributions` | N:M | `users` through `contribution_members` |
+| `users` | 1:N | `shared_resources` |
+| `projects` | 1:N | `shared_resources` |
+| `circuits` | 1:N | `shared_resources` |
+
+---
+
+# 38. Important Business Rules
+
+## User roles
+
+A user may have:
+
+```text
+1 Primary Role
++
+0..N Secondary Roles
+```
+
+Example:
+
+```text
+User
+├── Team Lead       [PRIMARY]
+├── Database Dev    [SECONDARY]
+└── Backend Dev     [SECONDARY]
+```
+
+There must be **at most one primary role per user**.
+
+---
+
+## Contributions
+
+A contribution may have:
+
+```text
+1 Contribution
++
+1..N Contributors
+```
+
+Therefore:
+
+```text
+contributions
+      ↓
+contribution_members
+      ↓
+multiple users
+```
 
-Type
+This correctly supports shared work.
 
-Constraints
+---
 
-assignment_id
+## Circuit ownership
 
-UUID
+A circuit has one owner through `circuits.user_id`.
 
-PK
+A circuit may also be included in a collaborative project through project/shared-resource relationships.
 
-course_id
+---
 
-UUID
+## Assessment attempts
 
-FK → courses.course_id
+One user can attempt an assessment multiple times.
 
-module_id
+```text
+User
+  ↓
+Assessment Attempts
+  ↓
+Question Answers
+```
 
-UUID
+---
 
-FK → learning_modules.module_id, NULL
+## Simulation
 
-assessment_id
+A circuit can be simulated many times.
 
-UUID
+```text
+Circuit
+   ↓
+Simulation Run
+   ↓
+Simulation Result
+```
 
-FK → assessments.assessment_id, NULL
+This preserves simulation history.
 
-assigned_by
+---
 
-UUID
+## AI context
 
-FK → users.user_id
+AI messages can optionally reference:
 
-due_date
+- Current circuit
+- Simulation
+- Code
+- Error
+- Learning module
+- Other contextual information
 
-TIMESTAMP
+Dynamic context is stored in `ai_messages.context_data`.
 
-NULL
+---
 
-created_at
+# 39. MVP Database
 
-TIMESTAMP
+For the hackathon MVP, implement these first:
 
-NOT NULL
+### Authentication & Users
 
-28. shared_resources
+- `users`
+- `roles`
+- `user_roles`
 
-Supports circuit/code/project sharing.
+### Learning
 
-Column
+- `courses`
+- `learning_modules`
+- `module_progress`
 
-Type
+### Assessment
 
-Constraints
+- `assessments`
+- `questions`
+- `question_options`
+- `assessment_attempts`
+- `question_answers`
 
-share_id
+### Quantum
 
-UUID
+- `circuits`
+- `quantum_gates`
+- `circuit_gates`
+- `simulation_runs`
+- `simulation_results`
 
-PK
+### AI
 
-user_id
+- `ai_conversations`
+- `ai_messages`
 
-UUID
+### Coding
 
-FK → users.user_id
-
-circuit_id
-
-UUID
-
-FK → circuits.circuit_id, NULL
-
-resource_type
-
-VARCHAR(30)
-
-NOT NULL
-
-title
-
-VARCHAR(200)
-
-NOT NULL
-
-description
-
-TEXT
-
-NULL
-
-share_token
-
-VARCHAR(100)
-
-UNIQUE, NOT NULL
-
-visibility
-
-VARCHAR(20)
-
-NOT NULL
-
-created_at
-
-TIMESTAMP
-
-NOT NULL
-
-expires_at
-
-TIMESTAMP
-
-NULL
-
-resource_type:
-
-circuit
-code
-project
-
-visibility:
-
-private
-link
-public
-
-29. Main Relationships
-
-Parent
-
-Relationship
-
-Child
-
-users
-
-1
-
-courses
-
-courses
-
-1
-
-learning_modules
-
-users
-
-1
-
-module_progress
-
-learning_modules
-
-1
-
-module_progress
-
-learning_modules
-
-1
-
-assessments
-
-assessments
-
-1
-
-questions
-
-questions
-
-1
-
-question_options
-
-assessments
-
-1
-
-assessment_attempts
-
-users
-
-1
-
-assessment_attempts
-
-assessment_attempts
-
-1
-
-question_answers
-
-learning_modules
-
-1
-
-coding_challenges
-
-coding_challenges
-
-1
-
-code_submissions
-
-users
-
-1
-
-code_submissions
-
-users
-
-1
-
-circuits
-
-circuits
-
-1
-
-circuit_gates
-
-quantum_gates
-
-1
-
-circuit_gates
-
-circuits
-
-1
-
-circuit_versions
-
-circuits
-
-1
-
-simulation_runs
-
-simulation_runs
-
-1:1
-
-simulation_results
-
-users
-
-1
-
-ai_conversations
-
-ai_conversations
-
-1
-
-ai_messages
-
-users
-
-1
-
-learning_recommendations
-
-learning_modules
-
-1
-
-learning_recommendations
-
-users
-
-1:1
-
-user_gamification
-
-users
-
-N
-
-badges through user_badges
-
-users
-
-N
-
-courses through course_enrollments
-
-users
-
-1
-
-shared_resources
-
-circuits
-
-1
-
-shared_resources
-
-30. PostgreSQL Design Notes
-
-Primary Keys
-
-Use UUIDs:
-
-UUID PRIMARY KEY DEFAULT gen_random_uuid()
-
-JSONB
-
-Use JSONB for dynamic quantum data:
-
-circuits.circuit_data
-
-circuit_gates.parameters
-
-simulation_results.measurement_counts
-
-simulation_results.probabilities
-
-simulation_results.state_vector
-
-simulation_results.bloch_data
-
-ai_messages.context_data
-
-Timestamps
-
-Use:
-
-TIMESTAMP WITH TIME ZONE
-
-for application timestamps.
-
-Important Indexes
-
-Create indexes on:
-
-users.email
-learning_modules.course_id
-module_progress.user_id
-module_progress.module_id
-assessments.module_id
-assessment_attempts.user_id
-circuits.user_id
-circuit_gates.circuit_id
-simulation_runs.circuit_id
-simulation_runs.user_id
-ai_conversations.user_id
-ai_messages.conversation_id
-code_submissions.user_id
-course_enrollments.user_id
-shared_resources.share_token
-
-31. Simplified MVP Model
-
-For the hackathon MVP, you do not have to implement every table immediately.
-
-Start with:
-
-users
-courses
-learning_modules
-module_progress
-
-assessments
-questions
-question_options
-assessment_attempts
-
-circuits
-quantum_gates
-circuit_gates
-simulation_runs
-simulation_results
-
-ai_conversations
-ai_messages
-
-coding_challenges
-code_submissions
+- `coding_challenges`
+- `code_submissions`
 
 Then add:
 
-user_gamification
-badges
-user_badges
-course_enrollments
-course_assignments
-shared_resources
-learning_recommendations
-circuit_versions
+- `user_gamification`
+- `badges`
+- `user_badges`
+- `course_enrollments`
+- `course_assignments`
+- `learning_recommendations`
+- `circuit_versions`
+- `projects`
+- `project_members`
+- `contributions`
+- `contribution_members`
+- `shared_resources`
 
-after the core workflow is working.
+---
 
-This keeps the database manageable while still leaving room for the instructor dashboard, gamification, collaboration, AI personalization, and advanced simulation features described in the project roadmap.
+# 40. Recommended Indexes
+
+Create indexes on:
+
+```text
+users.email
+
+user_roles.user_id
+user_roles.role_id
+
+learning_modules.course_id
+
+module_progress.user_id
+module_progress.module_id
+
+assessments.module_id
+
+questions.assessment_id
+
+assessment_attempts.user_id
+assessment_attempts.assessment_id
+
+question_answers.attempt_id
+
+coding_challenges.module_id
+code_submissions.user_id
+code_submissions.challenge_id
+
+circuits.user_id
+circuit_gates.circuit_id
+circuit_versions.circuit_id
+
+simulation_runs.circuit_id
+simulation_runs.user_id
+
+ai_conversations.user_id
+ai_conversations.circuit_id
+ai_messages.conversation_id
+
+learning_recommendations.user_id
+learning_recommendations.module_id
+
+course_enrollments.user_id
+course_enrollments.course_id
+
+course_assignments.course_id
+
+projects.owner_id
+project_members.project_id
+project_members.user_id
+
+contributions.project_id
+contribution_members.contribution_id
+contribution_members.user_id
+
+shared_resources.share_token
+shared_resources.project_id
+shared_resources.circuit_id
+```
+
+---
+
+# 41. Backend Integration
+
+The model supports the planned FastAPI API:
+
+| API | Main Tables |
+|---|---|
+| `POST /api/auth/register` | `users`, `roles`, `user_roles` |
+| `POST /api/auth/login` | `users`, `user_roles` |
+| `POST /api/circuits/simulate` | `circuits`, `simulation_runs`, `simulation_results` |
+| `POST /api/code/execute` | `code_submissions` |
+| `POST /api/ai/chat` | `ai_conversations`, `ai_messages` |
+| `POST /api/ai/debug` | `ai_messages`, circuit/simulation context |
+| `GET /api/progress/{user_id}` | `module_progress`, `assessment_attempts`, `code_submissions` |
+| `POST /api/progress/{user_id}/update` | `module_progress` |
+| `POST /api/collaborate/share` | `shared_resources` |
+| `GET /api/collaborate/{share_id}` | `shared_resources` |
+
+---
+
+# 42. Complete Data Flow
+
+```text
+                         USER
+                          │
+             ┌────────────┼────────────┐
+             ▼            ▼            ▼
+          LEARN         BUILD         CODE
+             │            │            │
+             ▼            ▼            ▼
+        MODULES        CIRCUITS    SUBMISSIONS
+             │            │            │
+             │            ▼            │
+             │       SIMULATION        │
+             │            │            │
+             │            ▼            │
+             │       SIMULATION        │
+             │        RESULTS          │
+             │            │            │
+             └────────────┼────────────┘
+                          ▼
+                    AI TUTOR
+                          │
+             ┌────────────┼────────────┐
+             ▼            ▼            ▼
+          EXPLAIN       DEBUG       OPTIMIZE
+                          │
+                          ▼
+                    ASSESSMENTS
+                          │
+                          ▼
+                    PROGRESS
+                          │
+             ┌────────────┼────────────┐
+             ▼            ▼            ▼
+       RECOMMENDATIONS     XP        BADGES
+                          │
+                          ▼
+                    DASHBOARDS
+
+                    COLLABORATION
+                          │
+              ┌───────────┴───────────┐
+              ▼                       ▼
+          PROJECTS              SHARED RESOURCES
+              │
+              ▼
+        CONTRIBUTIONS
+              │
+              ▼
+      MULTIPLE CONTRIBUTORS
+```
+
+---
+
+# 43. Why This Version Is Better
+
+Compared with the earlier 26-table model, this version keeps the original learning, assessment, quantum, AI, simulation, dashboard, gamification, instructor, and sharing functionality while explicitly handling two important project requirements:
+
+### Multiple roles
+
+Instead of:
+
+```text
+users.role
+```
+
+the model uses:
+
+```text
+users
+  ↓
+user_roles
+  ↓
+roles
+```
+
+This supports one primary role and multiple secondary roles.
+
+### Shared contributions
+
+Instead of forcing one person onto a contribution:
+
+```text
+contributions.user_id
+```
+
+the model uses:
+
+```text
+contributions
+       ↓
+contribution_members
+       ↓
+User A
+User B
+User C
+```
+
+This supports a contribution completed by multiple people without duplicating the contribution itself.
+
+### Collaboration
+
+Projects and project membership are separated from individual contributions:
+
+```text
+PROJECT
+   │
+   ├── PROJECT_MEMBERS
+   │
+   └── CONTRIBUTIONS
+          │
+          └── CONTRIBUTION_MEMBERS
+```
+
+This makes the model suitable for the team's collaborative workflow while remaining compatible with the hackathon MVP.
+
+---
+
+# 44. Final Table Count
+
+| Area | Tables |
+|---|---:|
+| User & Access | 3 |
+| Learning | 4 |
+| Assessment | 7 |
+| Quantum Circuit & Simulation | 6 |
+| AI | 2 |
+| Gamification | 3 |
+| Course & Instructor | 2 |
+| Projects & Collaboration | 5 |
+| **Total** | **32** |
+
+> **Recommended implementation strategy:** build the MVP subset first, then add the collaboration, personalization, gamification, and advanced-history tables after the core Learn → Build → Code → Simulate → Visualize → AI → Assess flow is working.

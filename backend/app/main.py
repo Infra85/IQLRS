@@ -4,8 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import circuits, code, ai, auth, progress, collaborate
 
 app = FastAPI(
-    title="Quantum Learn API",
-    description="Backend API for the Quantum Learning Platform",
+    title=" IQLRS API",
+    description="Backend API for Intelligent Quantum Learning and Reseach System",
     version="0.1.0",
 )
 
@@ -27,4 +27,4 @@ app.include_router(collaborate.router, prefix="/api/collaborate", tags=["collabo
 
 @app.get("/")
 def root():
-    return {"status": "ok", "service": "quantum-learn-api"}
+    return {"status": "ok", "service": "IQLRS-API"}
