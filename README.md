@@ -1,10 +1,14 @@
-# Quantum Learn
+# INTELLIGENT QUANTUM LEARNING AND RESEARCH SYSTEM
 
 AI-Based Interactive Quantum Algorithm Learning Platform.
 
 Learn, build, simulate, and visualize quantum algorithms with AI-powered guidance.
 
-## Features
+v.1- For student: Simulation only avaliable according to the learning module.
+
+v.2- For instructure, researchers: High end simulation available, for complex computing, through code.
+
+## Features v.1
 
 - **Interactive Learning Modules** — Structured content covering quantum computing fundamentals through advanced algorithms
 - **Visual Circuit Builder** — Drag-and-drop quantum circuit design
@@ -15,6 +19,9 @@ Learn, build, simulate, and visualize quantum algorithms with AI-powered guidanc
 - **Assessments** — Quizzes, coding challenges, and progress tracking
 - **Dashboards** — Learner and instructor analytics
 
+## Features v.2
+
+- More freedom for quantum simulation.
 ## Tech Stack
 
 | Layer | Technology |
@@ -71,7 +78,7 @@ quantum-learn/
 └── README.md
 ```
 
-See [docs/architecture.md](docs/architecture.md) for detailed architecture documentation.
+See [docs/Architecture/architecture.md](docs/Architecture/architecture.md) for detailed architecture documentation.
 
 
 
