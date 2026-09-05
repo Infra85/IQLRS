@@ -79,17 +79,17 @@
 
 ---
 
-## Timeline (Assuming ~1 week hackathon)
+## Timeline 
 
 | Day | Focus | Who |
 |-----|-------|-----|
-| **Day 1** | Repo setup, tech stack installed, DB schema, basic Next.js + FastAPI skeleton | P6 leads, everyone sets up |
-| **Day 2** | Circuit builder MVP, code editor shell, AI chat shell, first 2 learning modules written | P1, P2, P3, P4 |
-| **Day 3** | Qiskit simulation working end-to-end, circuit → results displayed, auth working | P2, P1, P5 |
-| **Day 4** | AI tutor connected with context, quizzes working, dashboards started | P3, P4, P5 |
-| **Day 5** | Bloch sphere viz, multi-backend support, all modules drafted | P1, P2, P4 |
-| **Day 6** | Gamification, instructor dashboard, collaborative sharing, optimization suggestions | P5, P3, P1 |
-| **Day 7** | Integration testing, deployment, documentation, demo prep | Everyone |
+| **Day -** | Repo setup, tech stack installed, DB schema, basic Next.js + FastAPI skeleton | P6 leads, everyone sets up |
+| **Day -** | Circuit builder MVP, code editor shell, AI chat shell, first 2 learning modules written | P1, P2, P3, P4 |
+| **Day -** | Qiskit simulation working end-to-end, circuit → results displayed, auth working | P2, P1, P5 |
+| **Day -** | AI tutor connected with context, quizzes working, dashboards started | P3, P4, P5 |
+| **Day -** | Bloch sphere viz, multi-backend support, all modules drafted | P1, P2, P4 |
+| **Day -** | Gamification, instructor dashboard, collaborative sharing, optimization suggestions | P5, P3, P1 |
+| **Day -** | Integration testing, deployment, documentation, demo prep | Everyone |
 
 ---
 
@@ -177,23 +177,3 @@ quantum-learn/
 ├── .gitignore
 └── LICENSE
 ```
-
----
-
-## What to Do Right Now
-
-1. **One person (P6)** creates the GitHub repo with the folder structure above, adds a `.gitignore`, and sets up branch protection on `main`
-2. **Everyone** clones, creates their feature branch (`feature/circuit-builder`, `feature/ai-tutor`, etc.)
-3. **P6** sets up the skeleton — empty Next.js app + empty FastAPI app + Docker Compose + CI
-4. **P4** starts writing learning content immediately — this is the one thing that doesn't need code to begin
-5. **Everyone agrees on the API contract** (what endpoints exist, what they accept/return) before coding in parallel — sketch this in `docs/api.md` on day 1
-
-### Branch Strategy
-- `main` — protected, only merged PRs
-- `dev` — integration branch, everyone merges here first
-- `feature/*` — one per person/deliverable
-
-### Key Day-1 Decisions to Make as a Team
-- Which AI API to use (Claude vs OpenAI) — affects cost and P3's work
-- Auth provider (Google only? Email too?)
-- Are you deploying for real or just running locally for the demo?

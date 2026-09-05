@@ -40,7 +40,7 @@ Learn, build, simulate, and visualize quantum algorithms with AI-powered guidanc
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-org/quantum-learn.git
+git clone 
 cd quantum-learn
 
 # Start everything with Docker
@@ -59,7 +59,6 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-The frontend runs at `http://localhost:3000` and the backend API at `http://localhost:8000`.
 
 ## Project Structure
 
@@ -80,6 +79,4 @@ See [docs/architecture.md](docs/architecture.md) for detailed architecture docum
 2. Make your changes
 3. Open a PR targeting `dev`
 
-## License
 
-MIT

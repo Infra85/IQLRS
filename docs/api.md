@@ -1,10 +1,5 @@
 # API Reference
 
-Auto-generated docs are available at `http://localhost:8000/docs` (Swagger UI) when the backend is running.
-
-## Endpoints
-
-### Circuits
 
 #### `POST /api/circuits/simulate`
 Simulate a quantum circuit.
