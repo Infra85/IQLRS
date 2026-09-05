@@ -73,10 +73,5 @@ quantum-learn/
 
 See [docs/architecture.md](docs/architecture.md) for detailed architecture documentation.
 
-## Contributing
-
-1. Create a feature branch from `dev`: `git checkout -b feature/your-feature dev`
-2. Make your changes
-3. Open a PR targeting `dev`
 
 
