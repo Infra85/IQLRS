@@ -25,6 +25,11 @@ class AIConversation(Base):
         nullable=False,
     )
 
+    circuit_id: Mapped[int | None] = mapped_column(
+        ForeignKey("circuits.id"),
+        nullable=True
+    )
+
     title: Mapped[str | None] = mapped_column(
         String(200),
         nullable=True,
