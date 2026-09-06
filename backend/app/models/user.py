@@ -1,8 +1,14 @@
-"""User and progress models."""
+
+"""User, role, and gamification models."""
 
 from datetime import datetime
-
-from sqlalchemy import String, Integer, DateTime, ForeignKey, Text, JSON
+from sqlalchemy import (
+    String,
+    Integer,
+    Boolean,
+    DateTime,
+    ForeignKey,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -12,40 +18,93 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    email: Mapped[str] = mapped_column(
+        String(255), unique=True, index=True
+    )
     hashed_password: Mapped[str] = mapped_column(String(255))
     name: Mapped[str] = mapped_column(String(120))
-    role: Mapped[str] = mapped_column(String(20), default="learner")  # learner | instructor
-    xp: Mapped[int] = mapped_column(Integer, default=0)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow
+    )
 
-    progress = relationship("Progress", back_populates="user")
-    shares = relationship("SharedResource", back_populates="owner")
+    roles = relationship("UserRole", back_populates="user")
+    module_progress = relationship(
+        "ModuleProgress", back_populates="user"
+    )
+    enrollments = relationship(
+        "CourseEnrollment", back_populates="user"
+    )
+    gamification = relationship(
+        "UserGamification",
+        back_populates="user",
+        uselist=False,
+    )
+
+    badges = relationship(
+    "UserBadge",
+    back_populates="user",
+    )
 
 
-class Progress(Base):
-    __tablename__ = "progress"
+class Role(Base):
+    __tablename__ = "roles"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    module_id: Mapped[str] = mapped_column(String(80))
-    score: Mapped[int] = mapped_column(Integer, default=0)
-    completed: Mapped[int] = mapped_column(Integer, default=0)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    name: Mapped[str] = mapped_column(
+        String(50), unique=True, nullable=False
+    )
+    description: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )
 
-    user = relationship("User", back_populates="progress")
+    users = relationship("UserRole", back_populates="role")
 
 
-class SharedResource(Base):
-    __tablename__ = "shared_resources"
+class UserRole(Base):
+    __tablename__ = "user_roles"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    share_id: Mapped[str] = mapped_column(String(32), unique=True, index=True)
-    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    kind: Mapped[str] = mapped_column(String(20))  # circuit | code
-    payload: Mapped[dict] = mapped_column(JSON)
-    title: Mapped[str] = mapped_column(String(200), default="")
-    description: Mapped[str] = mapped_column(Text, default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
-    owner = relationship("User", back_populates="shares")
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"), nullable=False
+    )
+
+    role_id: Mapped[int] = mapped_column(
+        ForeignKey("roles.id"), nullable=False
+    )
+
+    is_primary: Mapped[bool] = mapped_column(
+        Boolean, default=False
+    )
+
+    user = relationship("User", back_populates="roles")
+    role = relationship("Role", back_populates="users")
+
+
+class UserGamification(Base):
+    __tablename__ = "user_gamification"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"),
+        unique=True,
+        nullable=False,
+    )
+
+    xp: Mapped[int] = mapped_column(
+        Integer, default=0
+    )
+
+    level: Mapped[int] = mapped_column(
+        Integer, default=1
+    )
+
+    streak_days: Mapped[int] = mapped_column(
+        Integer, default=0
+    )
+
+    user = relationship(
+        "User",
+        back_populates="gamification",
+    )
