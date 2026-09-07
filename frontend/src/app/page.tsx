@@ -5,10 +5,10 @@ export default function Home() {
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-gray-950 text-white">
       <Link
     href="/login"
-    className="absolute right-6 top-6 rounded-lg border border-gray-700 px-5 py-2.5 font-medium transition hover:bg-gray-800"
+    className="absolute right-6 top-6 rounded-lg border border-quantum-600 px-5 py-2.5 font-medium transition hover:bg-quantum-700"
   >
-    Login
-      </Link>
+    Login/Register
+    </Link>
       <h1 className="text-5xl font-bold tracking-tight">
         Quantum<span className="text-quantum-500">Learn</span>
       </h1>
