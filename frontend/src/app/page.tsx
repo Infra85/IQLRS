@@ -10,9 +10,10 @@ export default function Home() {
     Login/Register
     </Link>
       <h1 className="text-5xl font-bold tracking-tight">
-        Quantum<span className="text-quantum-500">Learn</span>
+        IQ<span className="text-quantum-500">LRS</span>
       </h1>
       <p className="mt-4 text-lg text-gray-400">
+        Intelligent Quantum Learning And Research System,
         AI-Based Interactive Quantum Algorithm Learning Platform
       </p>
       <div className="mt-10 flex gap-4">
