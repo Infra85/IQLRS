@@ -2,18 +2,50 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { API_URL } from "@/lib/api";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    console.log("Login:", email, password);
+  try {
+    const response = await fetch(
+      `${API_URL}/api/auth/login`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      }
+    );
 
-    // Authentication will be connected here later
-  };
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.detail || "Login failed");
+    }
+
+    // Store JWT token
+    localStorage.setItem("access_token", data.access_token);
+
+    // Go to dashboard
+    window.location.href = "/dashboard";
+  } catch (error) {
+    console.error(error);
+    alert(
+      error instanceof Error
+        ? error.message
+        : "Something went wrong during login"
+    );
+  }
+};
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-[#020617] px-4">

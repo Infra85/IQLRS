@@ -1,0 +1,262 @@
+[
+  {
+    "id": 1,
+    "title": "Module 1 – Qubits & Quantum States",
+    "objectives": "Introduces the fundamental unit of quantum information and the basic state space.",
+    "description": "Introduces the fundamental unit of quantum information and the basic state space.",
+    "diagram": "classical bit: 0 or 1\nquantum bit (qubit): α|0⟩ + β|1⟩, |α|^2+|β|^2=1",
+    "questions": [
+      {
+        "question": "Which of the following best describes a qubit?",
+        "options": [
+          "A classical bit that can be either 0 or 1",
+          "A vector on the Bloch sphere described by amplitudes α and β",
+          "A deterministic logic gate"
+        ],
+        "answerIndex": 1
+      },
+      {
+        "question": "If a qubit is in the state |0⟩, what are the amplitudes α and β?",
+        "options": [
+          "α = 1, β = 0",
+          "α = 0, β = 1",
+          "α = β = 1/√2"
+        ],
+        "answerIndex": 0
+      },
+      {
+        "question": "Which notation is commonly used to denote a quantum state?",
+        "options": ["|ψ⟩", "$ψ$", "ψ()"],
+        "answerIndex": 0
+      }
+    ],
+    "tryInBuilder": false
+  },
+  {
+    "id": 2,
+    "title": "Module 2 – Superposition",
+    "objectives": "Explores how qubits can exist in multiple states simultaneously.",
+    "description": "Explores how qubits can exist in multiple states simultaneously.",
+    "diagram": "classical bit: 0 or 1\nquantum bit (qubit): α|0⟩ + β|1⟩, |α|^2+|β|^2=1",
+    "questions": [
+      {
+        "question": "Which statement about superposition is true?",
+        "options": [
+          "A qubit can only be in one state at a time",
+          "Measurement collapses the superposition to a definite outcome",
+          "Superposition violates the uncertainty principle"
+        ],
+        "answerIndex": 1
+      },
+      {
+        "question": "If α = β = 1/√2, what is the probability of measuring |0⟩?",
+        "options": ["0.25", "0.5", "1"],
+        "answerIndex": 1
+      },
+      {
+        "question": "Which of the following gates can create a superposition from |0⟩?",
+        "options": ["X", "Z", "H"],
+        "answerIndex": 2
+      }
+    ],
+    "tryInBuilder": false
+  },
+  {
+    "id": 3,
+    "title": "Module 3 – Measurement",
+    "objectives": "Describes how observing a quantum system forces it into a classical state.",
+    "description": "Describes how observing a quantum system forces it into a classical state.",
+    "diagram": "Measurement → collapse\n|ψ⟩ = α|0⟩ + β|1⟩ → 0 with prob. |α|², 1 with prob. |β|²",
+    "questions": [
+      {
+        "question": "After measuring a qubit, the system is left in:",
+        "options": ["A superposition", "An eigenstate of the measured observable", "An undefined state"],
+        "answerIndex": 1
+      },
+      {
+        "question": "If a qubit is measured and the outcome is |1⟩, what can be said about β?",
+        "options": [
+          "β must be zero",
+          "β must be the amplitude that was measured",
+          "β is irrelevant after measurement"
+        ],
+        "answerIndex": 1
+      },
+      {
+        "question": "Which of the following best describes the effect of measurement on entanglement?",
+        "options": [
+          "Measurement destroys all entanglement",
+          "Measurement can reveal correlations but does not create them",
+          "Measurement creates new entanglement"
+        ],
+        "answerIndex": 1
+      }
+    ],
+    "tryInBuilder": false
+  },
+  {
+    "id": 4,
+    "title": "Module 4 – Entanglement & Bell States",
+    "objectives": "Introduces correlated quantum states that cannot be separated into independent parts.",
+    "description": "Introduces correlated quantum states that cannot be separated into independent parts.",
+    "diagram": "Bell state: (|00⟩ + |11⟩)/√2\nMeasuring one qubit instantly determines the other.",
+    "questions": [
+      {
+        "question": "Which of the following is a Bell state?",
+        "options": [
+          "(|00⟩ + |01⟩)/√2",
+          "(|01⟩ + |10⟩)/√2",
+          "(|00⟩ + |11⟩)/√2"
+        ],
+        "answerIndex": 2
+      },
+      {
+        "question": "If the Bell state (|00⟩ + |11⟩)/√2 is measured on the first qubit and the result is |0⟩, what is the state of the second qubit?",
+        "options": ["|0⟩", "|1⟩", "Undefined"],
+        "answerIndex": 0
+      },
+      {
+        "question": "Entanglement implies that the combined system's state:",
+        "options": [
+          "Can be written as a product of individual qubit states.",
+          "Is always a superposition of all possible bit strings.",
+          "Cannot be factored into separate qubit states."
+        ],
+        "answerIndex": 2
+      }
+    ],
+    "tryInBuilder": false
+  },
+  {
+    "id": 5,
+    "title": "Module 5 – Deutsch‑Jozsa Algorithm",
+    "objectives": "A simple quantum algorithm that decides whether a function is constant or balanced.",
+    "description": "A simple quantum algorithm that decides whether a function is constant or balanced.",
+    "diagram": "Oracle: f : {0,1}ⁿ → {0,1}\nQuantum circuit: Hadamard → Oracle → Hadamard → Measure",
+    "questions": [
+      {
+        "question": "The Deutsch‑Jozsa algorithm demonstrates a clear advantage over classical evaluation because:",
+        "options": [
+          "It can evaluate the function on all inputs simultaneously",
+          "It requires fewer qubits than classical bits",
+          "It always returns the exact classical answer after a single query"
+        ],
+        "answerIndex": 2
+      },
+      {
+        "question": "If f is a constant function, what will the algorithm output after measurement?",
+        "options": ["0", "1", "The same value for all inputs"],
+        "answerIndex": 2
+      },
+      {
+        "question": "Which gate is used as the oracle for a constant‑0 function?",
+        "options": ["X", "Z", "Phase (–1)"],
+        "answerIndex": 2
+      }
+    ],
+    "tryInBuilder": true,
+    "builderLink": "/builder?module=5"
+  },
+  {
+    "id": 6,
+    "title": "Module 6 – Grover's Search",
+    "objectives": "Shows how a quantum search can achieve a quadratic speed‑up over classical brute‑force.",
+    "description": "Shows how a quantum search can achieve a quadratic speed‑up over classical brute‑force.",
+    "diagram": "Oracle marks the target |ω⟩\nDiffusion operator amplifies its amplitude\nAfter ≈√N iterations, measure → high probability of |ω⟩",
+    "questions": [
+      {
+        "question": "Grover's algorithm provides a speed‑up for searching an unstructured database of size N because:",
+        "options": [
+          "It reduces the number of required qubits",
+          "It requires only O(log N) queries instead of O(N)",
+          "It finds the marked item with high probability after about √N oracle calls"
+        ],
+        "answerIndex": 2
+      },
+      {
+        "question": "If N = 16, approximately how many Grover iterations are needed to achieve high probability of success?",
+        "options": ["4", "8", "16"],
+        "answerIndex": 0
+      },
+      {
+        "question": "Which of the following is NOT a component of the Grover diffusion operator?",
+        "options": ["Hadamard gates", "Phase inversion", "Multi‑controlled Z gate"],
+        "answerIndex": 1
+      }
+    ],
+    "tryInBuilder": true,
+    "builderLink": "/builder?module=6"
+  },
+  {
+    "id": 7,
+    "title": "Module 7 – Quantum Teleportation",
+    "objectives": "Explains how an unknown quantum state can be transmitted using entanglement and classical communication.",
+    "description": "Explains how an unknown quantum state can be transmitted using entanglement and classical communication.",
+    "diagram": "Sender: Bell measurement → 2 classical bits\nReceiver: Conditional Pauli corrections\nResult: Exact recreation of the original state",
+    "questions": [
+      {
+        "question": "Quantum teleportation requires which of the following resources?",
+        "options": [
+          "A classical communication channel only",
+          "A pair of maximally entangled qubits shared between sender and receiver",
+          "A direct quantum channel between sender and receiver"
+        ],
+        "answerIndex": 1
+      },
+      {
+        "question": "After a Bell measurement on the sender's qubits, what does the receiver need to do to recover the original state?",
+        "options": [
+          "Apply a random Pauli gate",
+          "Apply a specific Pauli gate based on the two classical bits received",
+          "Measure the received qubit"
+        ],
+        "answerIndex": 1
+      },
+      {
+        "question": "Why can't the original unknown state be copied during teleportation?",
+        "options": [
+          "Because cloning would violate the no‑cloning theorem",
+          "Because teleportation only works for classical states",
+          "Because measurement destroys the state"
+        ],
+        "answerIndex": 0
+      }
+    ],
+    "tryInBuilder": true,
+    "builderLink": "/builder?module=7"
+  },
+  {
+    "id": 8,
+    "title": "Module 8 – Shor's Algorithm Overview",
+    "objectives": "Provides a high‑level view of how quantum factoring works, focusing on period finding.",
+    "description": "Provides a high‑level view of how quantum factoring works, focusing on period finding.",
+    "diagram": "1. Prepare superposition of all possible inputs\n2. Apply modular exponentiation as a unitary\n3. Perform quantum Fourier transform\n4. Measure to obtain a period r\n5. Use r to derive a non‑trivial factor of N",
+    "questions": [
+      {
+        "question": "The key subroutine of Shor's algorithm is:",
+        "options": [
+          "Classical integer division",
+          "Quantum period finding via Fourier transform",
+          "Brute‑force trial division"
+        ],
+        "answerIndex": 1
+      },
+      {
+        "question": "Shor's algorithm runs in polynomial time with respect to:",
+        "options": [
+          "The number of bits of the integer N",
+          "The value of N itself",
+          "The square root of N"
+        ],
+        "answerIndex": 0
+      },
+      {
+        "question": "Which quantum operation is essential for creating the period‑finding superposition?",
+        "options": ["Hadamard transform", "Controlled modular exponentiation", "CNOT cascade"],
+        "answerIndex": 1
+      }
+    ],
+    "tryInBuilder": true,
+    "builderLink": "/builder?module=8"
+  }
+]
