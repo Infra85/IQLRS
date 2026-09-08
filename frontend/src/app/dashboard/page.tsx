@@ -32,15 +32,41 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
+        // Get JWT token saved during login
+        const token = localStorage.getItem("access_token");
+
+        // If user is not logged in, send them to login page
+        if (!token) {
+          window.location.href = "/login";
+          return;
+        }
+
+        // Fetch dashboard for the currently logged-in user
         const response = await fetch(
-          "http://127.0.0.1:8000/api/dashboard/2"
+          "http://127.0.0.1:8000/api/dashboard/me",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
 
+        // Token is invalid or expired
+        if (response.status === 401) {
+          localStorage.removeItem("access_token");
+          window.location.href = "/login";
+          return;
+        }
+
+        // Other API errors
         if (!response.ok) {
           throw new Error("Failed to fetch dashboard data");
         }
 
         const data: DashboardData = await response.json();
+
+        console.log("DASHBOARD API DATA:", data);
+
         setDashboard(data);
       } catch (err) {
         console.error(err);
@@ -53,6 +79,7 @@ export default function DashboardPage() {
     fetchDashboard();
   }, []);
 
+  // Loading state
   if (loading) {
     return (
       <main className="min-h-screen bg-gray-950 p-8 text-white">
@@ -63,6 +90,7 @@ export default function DashboardPage() {
     );
   }
 
+  // Error state
   if (error || !dashboard) {
     return (
       <main className="min-h-screen bg-gray-950 p-8 text-white">
@@ -80,6 +108,7 @@ export default function DashboardPage() {
   return (
     <main className="min-h-screen bg-gray-950 p-8 text-white">
       <div className="mx-auto max-w-6xl">
+        {/* Dashboard Header */}
         <h1 className="text-3xl font-bold">My Dashboard</h1>
 
         <p className="mt-2 text-gray-400">
@@ -129,30 +158,38 @@ export default function DashboardPage() {
           <h2 className="text-xl font-semibold">Learning Statistics</h2>
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Quiz Score */}
             <div className="rounded-xl border border-gray-800 bg-gray-900 p-5">
               <p className="text-sm text-gray-400">Quiz Score</p>
+
               <p className="mt-2 text-3xl font-bold">
                 {statistics.quiz_score}%
               </p>
             </div>
 
+            {/* Challenges */}
             <div className="rounded-xl border border-gray-800 bg-gray-900 p-5">
               <p className="text-sm text-gray-400">Challenges</p>
+
               <p className="mt-2 text-3xl font-bold">
                 {statistics.challenges_completed}/
                 {statistics.challenges_total}
               </p>
             </div>
 
+            {/* Learning Streak */}
             <div className="rounded-xl border border-gray-800 bg-gray-900 p-5">
               <p className="text-sm text-gray-400">Learning Streak</p>
+
               <p className="mt-2 text-3xl font-bold">
                 {statistics.streak} days
               </p>
             </div>
 
+            {/* XP */}
             <div className="rounded-xl border border-gray-800 bg-gray-900 p-5">
               <p className="text-sm text-gray-400">XP</p>
+
               <p className="mt-2 text-3xl font-bold">
                 {statistics.xp}
               </p>
@@ -163,4 +200,5 @@ export default function DashboardPage() {
     </main>
   );
 }
+
 
