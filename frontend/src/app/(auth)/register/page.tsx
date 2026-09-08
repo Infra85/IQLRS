@@ -8,13 +8,44 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleRegister = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleRegister = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    console.log("Register:", name, email, password);
+  try {
+    const response = await fetch(
+      "http://127.0.0.1:8000/api/auth/register",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+        }),
+      }
+    );
 
-    // Backend registration will be connected here later
-  };
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.detail || "Registration failed");
+    }
+
+    alert("Registration successful! Please login.");
+
+    window.location.href = "/login";
+  } catch (error) {
+    console.error(error);
+
+    alert(
+      error instanceof Error
+        ? error.message
+        : "Something went wrong during registration"
+    );
+  }
+};
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-[#020617] px-4">
