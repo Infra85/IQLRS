@@ -1,0 +1,12 @@
+"use client";
+
+import { useState } from "react";
+import type { Question } from "../modules";
+
+export default function Quiz({ questions }: { questions: Question[] }) {
+  const [answers, setAnswers] = useState<(number | null)[]>(() => questions.map(() => null));
+  const [submitted, setSubmitted] = useState(false);
+  const score = answers.reduce<number>((total, answer, index) => total + (answer === questions[index].answerIndex ? 1 : 0), 0);
+  function retry() { setAnswers(questions.map(() => null)); setSubmitted(false); }
+  return <section className="rounded-xl border border-gray-800 bg-gray-900/60 p-6"><h2 className="text-2xl font-semibold">Check your understanding</h2><div className="mt-6 space-y-8">{questions.map((question, questionIndex) => <fieldset key={question.question} className="border-b border-gray-800 pb-7 last:border-0"><legend className="font-medium">{questionIndex + 1}. {question.question}</legend><div className="mt-3 grid gap-2">{question.options.map((option, optionIndex) => { const chosen = answers[questionIndex] === optionIndex; const correct = optionIndex === question.answerIndex; const resultClass = submitted ? correct ? "border-green-500 bg-green-950/40" : chosen ? "border-red-500 bg-red-950/40" : "border-gray-700" : chosen ? "border-quantum-400 bg-quantum-950/40" : "border-gray-700 hover:border-gray-500"; return <label key={option} className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 text-sm ${resultClass}`}><input type="radio" name={`question-${questionIndex}`} checked={chosen} disabled={submitted} onChange={() => setAnswers((current) => current.map((answer, index) => index === questionIndex ? optionIndex : answer))} /><span>{String.fromCharCode(65 + optionIndex)}. {option}</span></label>; })}</div>{submitted && <p className="mt-3 text-sm text-gray-300"><span className="font-medium">{answers[questionIndex] === question.answerIndex ? "Correct." : "Not quite."}</span> {question.explanation}</p>}</fieldset>)}</div>{!submitted ? <button type="button" disabled={answers.some((answer) => answer === null)} onClick={() => setSubmitted(true)} className="mt-2 rounded-lg bg-quantum-600 px-5 py-2.5 font-medium disabled:cursor-not-allowed disabled:opacity-50 hover:bg-quantum-700">Submit quiz</button> : <div className="mt-2 flex flex-wrap items-center gap-4"><p className="font-semibold text-quantum-300">Score: {score} / {questions.length}</p><button type="button" onClick={retry} className="rounded-lg border border-gray-600 px-5 py-2.5 hover:bg-gray-800">Retry quiz</button></div>}</section>;
+}
