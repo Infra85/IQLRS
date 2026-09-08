@@ -35,7 +35,7 @@ export default function LoginPage() {
     localStorage.setItem("access_token", data.access_token);
 
     // Go to dashboard
-    window.location.href = "/dashboard";
+    window.location.href = "/";
   } catch (error) {
     console.error(error);
     alert(
