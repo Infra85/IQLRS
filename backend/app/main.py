@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import circuits, code, ai, auth, progress, collaborate
+from app.api.dashboard import router as dashboard_router
 
 app = FastAPI(
     title=" IQLRS API",
@@ -11,7 +12,9 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+         "http://127.0.0.1:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -23,7 +26,7 @@ app.include_router(ai.router, prefix="/api/ai", tags=["ai"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(progress.router, prefix="/api/progress", tags=["progress"])
 app.include_router(collaborate.router, prefix="/api/collaborate", tags=["collaborate"])
-
+app.include_router(dashboard_router)
 
 @app.get("/")
 def root():
