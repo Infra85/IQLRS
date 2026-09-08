@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { API_URL } from "@/lib/api";
 
 type Course = {
   name: string;
@@ -47,7 +48,7 @@ export default function DashboardPage() {
 
         // Fetch dashboard for the currently logged-in user
         const response = await fetch(
-          "http://127.0.0.1:8000/api/dashboard/me",
+          `${API_URL}/api/dashboard/me`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -210,5 +211,4 @@ export default function DashboardPage() {
     </main>
   );
 }
-
 

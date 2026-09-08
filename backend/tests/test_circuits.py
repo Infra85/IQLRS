@@ -1,16 +1,28 @@
-from fastapi.testclient import TestClient
+import asyncio
+
+import httpx
 
 from app.main import app
-
-client = TestClient(app)
 
 SIMULATE = "/api/circuits/simulate"
 
 
 def _simulate(payload: dict) -> dict:
-    response = client.post(SIMULATE, json=payload)
+    response = _request("POST", SIMULATE, json=payload)
     assert response.status_code == 200, response.text
     return response.json()
+
+
+def _request(method: str, path: str, **kwargs) -> httpx.Response:
+    async def send() -> httpx.Response:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(
+            transport=transport,
+            base_url="http://testserver",
+        ) as client:
+            return await client.request(method, path, **kwargs)
+
+    return asyncio.run(send())
 
 
 def _amp(pair: list[float]) -> complex:
@@ -115,7 +127,8 @@ def test_identity_gate():
 
 
 def test_unknown_gate_rejected():
-    response = client.post(
+    response = _request(
+        "POST",
         SIMULATE,
         json={
             "gates": [{"type": "RX", "qubit": 0}],
@@ -127,7 +140,8 @@ def test_unknown_gate_rejected():
 
 
 def test_unsupported_backend_rejected():
-    response = client.post(
+    response = _request(
+        "POST",
         SIMULATE,
         json={"gates": [], "num_qubits": 1, "backend": "cirq"},
     )
