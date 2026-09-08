@@ -1,3 +1,4 @@
+"use client";
 export default function DashboardPage() {
   const courses = [
     { name: "Quantum Fundamentals", progress: 80 },
@@ -6,10 +7,20 @@ export default function DashboardPage() {
     { name: "Algorithms", progress: 20 },
   ];
 
+  const handleLogout = () => {
+  window.location.href = "/";
+};
+
   return (
     <main className="min-h-screen bg-gray-950 p-8 text-white">
       <div className="mx-auto max-w-6xl">
         <h1 className="text-3xl font-bold">My Dashboard</h1>
+        <button
+  onClick={handleLogout}
+  className="mt-4 rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700"
+>
+  Logout
+</button>
 
         <p className="mt-2 text-gray-400">
           Track your learning progress, scores, and achievements.
