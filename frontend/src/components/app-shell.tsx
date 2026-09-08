@@ -9,10 +9,11 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const navigation = [
-  { href: "/dashboard", label: "Dashboard" },
+  { href: "/", label: "Home" },
   { href: "/learn", label: "Learn" },
   { href: "/builder", label: "Circuit Builder" },
   { href: "/editor", label: "Code Lab" },
+  { href: "/dashboard", label: "Dashboard" },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -24,7 +25,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen">
       <header className="app-shell-header sticky top-0 z-50 border-b border-white/[0.08] bg-ink-950/80 backdrop-blur-xl">
         <div className="mx-auto flex h-[4.5rem] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link href="/" aria-label="QuantumLearn home" className="rounded-xl">
+          <Link href="/" aria-label="IQLRS home" className="rounded-xl">
             <BrandMark />
           </Link>
 

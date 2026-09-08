@@ -18,7 +18,7 @@ export function BrandMark({ className, compact = false }: BrandMarkProps) {
       </span>
       {!compact && (
         <span className="text-base font-semibold tracking-[-0.025em] text-white">
-          Quantum<span className="text-quantum-300">Learn</span>
+          IQ<span className="text-quantum-500">LRS</span>
         </span>
       )}
     </div>
