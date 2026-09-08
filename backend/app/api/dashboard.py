@@ -7,6 +7,7 @@ from app.models.course import CourseEnrollment
 from app.models.learning import Course, LearningModule, ModuleProgress
 from app.models.assessment import AssessmentAttempt
 from app.models.challenge import CodingChallenge, CodeSubmission
+from app.dependencies import get_current_user
 
 router = APIRouter(
     prefix="/api/dashboard",
@@ -14,11 +15,12 @@ router = APIRouter(
 )
 
 
-@router.get("/{user_id}")
+@router.get("/me")
 def get_dashboard(
-    user_id: int,
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
+    user_id = current_user.id
     # -------------------------
     # 1. Get user
     # -------------------------
