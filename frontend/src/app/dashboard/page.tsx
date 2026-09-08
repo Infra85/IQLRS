@@ -24,12 +24,15 @@ type DashboardData = {
   };
 };
 
-"use client";
 export default function DashboardPage() {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const handleLogout = () => {
+  localStorage.removeItem("access_token");
+  window.location.href = "/login";
+};
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
