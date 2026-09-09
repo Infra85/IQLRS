@@ -82,7 +82,7 @@ def get_dashboard(
         )
 
         courses_data.append({
-            "name": course.name,
+            "name": course.title,
             "progress": progress_percentage
         })
 
@@ -135,7 +135,7 @@ def get_dashboard(
 
     if gamification:
         xp = getattr(gamification, "xp", 0)
-        streak = getattr(gamification, "streak", 0)
+        streak = getattr(gamification, "streak_days", 0)
     else:
         xp = 0
         streak = 0

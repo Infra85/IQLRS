@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { API_URL } from "@/lib/api";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -13,7 +14,7 @@ export default function RegisterPage() {
 
   try {
     const response = await fetch(
-      "http://127.0.0.1:8000/api/auth/register",
+      `${API_URL}/api/auth/register`,
       {
         method: "POST",
         headers: {

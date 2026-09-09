@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { API_URL } from "@/lib/api";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -12,7 +13,7 @@ export default function LoginPage() {
 
   try {
     const response = await fetch(
-      "http://127.0.0.1:8000/api/auth/login",
+      `${API_URL}/api/auth/login`,
       {
         method: "POST",
         headers: {
@@ -35,7 +36,7 @@ export default function LoginPage() {
     localStorage.setItem("access_token", data.access_token);
 
     // Go to dashboard
-    window.location.href = "/";
+    window.location.href = "/dashboard";
   } catch (error) {
     console.error(error);
     alert(

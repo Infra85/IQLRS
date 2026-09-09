@@ -29,5 +29,5 @@ app.include_router(collaborate.router, prefix="/api/collaborate", tags=["collabo
 app.include_router(dashboard_router)
 
 @app.get("/")
-def root():
+async def root():
     return {"status": "ok", "service": "IQLRS-API"}
