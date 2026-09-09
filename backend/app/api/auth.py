@@ -1,8 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from datetime import datetime, timedelta
+import random
+
 from app.core.database import get_db
 from app.core.security import hash_password, verify_password, create_access_token
+from app.core.email import send_otp_email
 from app.models.user import User
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
 
@@ -21,16 +25,23 @@ def register(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
         )
+otp = str(random.randint(100000, 999999))
+otp_expires_at = datetime.utcnow() + timedelta(minutes=10)
 
     user = User(
         email=payload.email,
         hashed_password=hash_password(payload.password),
-        name=payload.name
-    )
-
+        name=payload.name,
+        email_verified=False,
+        otp_code=otp,
+        otp_expires_at=otp_expires_at
+)
+    
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    send_otp_email(user.email, otp)
 
     return {
         "message": "User registered successfully",
@@ -54,6 +65,12 @@ def login(
             detail="Invalid email or password",
         )
 
+     if not user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Please verify your email before logging in",
+        )
+
     access_token = create_access_token(
         data={"sub": str(user.id)}
     )
@@ -61,5 +78,52 @@ def login(
     return {
         "access_token": access_token,
         "token_type": "bearer",
+    }
+
+    @router.post("/verify-otp")
+def verify_otp(
+    email: str,
+    otp: str,
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.email == email).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    if user.email_verified:
+        return {
+            "message": "Email is already verified",
+        }
+
+    if not user.otp_code:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No OTP found. Please request a new OTP.",
+        )
+
+    if user.otp_expires_at and datetime.utcnow() > user.otp_expires_at:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OTP has expired. Please request a new OTP.",
+        )
+
+    if user.otp_code != otp:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid OTP",
+        )
+
+    user.email_verified = True
+    user.otp_code = None
+    user.otp_expires_at = None
+
+    db.commit()
+
+    return {
+        "message": "Email verified successfully",
     }
 

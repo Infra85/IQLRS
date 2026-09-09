@@ -23,6 +23,21 @@ class User(Base):
     )
     hashed_password: Mapped[str] = mapped_column(String(255))
     name: Mapped[str] = mapped_column(String(120))
+    email_verified: Mapped[bool] = mapped_column(
+    Boolean,
+    default=False,
+    nullable=False,
+)
+
+otp_code: Mapped[str | None] = mapped_column(
+    String(6),
+    nullable=True,
+)
+
+otp_expires_at: Mapped[datetime | None] = mapped_column(
+    DateTime,
+    nullable=True,
+)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow
     )
