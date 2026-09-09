@@ -31,7 +31,7 @@
 .hero-halo { width: 35rem; height: 35rem; border-radius: 50%; filter: blur(3px); pointer-events: none; transition: transform .1s linear, opacity .1s linear; }
 .hero-halo-one { right: -10rem; top: -9rem; background: radial-gradient(circle, rgba(92,124,250,.18), transparent 67%); transform: translate3d(0, calc(var(--home-scroll-progress) * 80px), 0); opacity: calc(.9 - var(--home-scroll-progress) * .45); }
 .hero-halo-two { right: 28%; bottom: -19rem; background: radial-gradient(circle, rgba(48,201,215,.1), transparent 65%); transform: translate3d(0, calc(var(--home-scroll-progress) * -50px), 0); }
-.hero-circuit-stage { transform: translate3d(0, calc(var(--home-scroll-progress) * 48px), 0); opacity: calc(1 - var(--home-scroll-progress) * .38); transition: transform .1s linear, opacity .1s linear; }
+.hero-circuit-stage { transform: translate3d(0, calc(var(--home-scroll-progress) * 48px), 0); opacity: calc(1 - var(--home-scroll-progress) * .38); transition: transform .075s linear, opacity .075s linear; }
 .hero-circuit-panel { overflow: hidden; }
 .hero-circuit-panel::before { content: ""; position: absolute; inset: 0; background: linear-gradient(112deg, transparent 25%, rgba(145,167,255,.07) 47%, transparent 62%); transform: translateX(-100%); animation: circuit-scan 8s ease-in-out infinite; }
 .circuit-diagram { position: relative; z-index: 1; display: block; width: 100%; height: auto; }
