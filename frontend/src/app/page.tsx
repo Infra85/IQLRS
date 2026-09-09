@@ -13,10 +13,15 @@ const capabilities = [
   { title: "AI Assistance", detail: "[AI ASSISTANCE PLACEHOLDER]", icon: Bot, accent: "rose" },
 ];
 
-function CircuitDiagram({ light = false }: { light?: boolean }) {
-  return <svg viewBox="0 0 680 330" fill="none" aria-hidden="true" className={light ? "circuit-diagram light-diagram" : "circuit-diagram"}>
-    <path d="M36 72H644M36 165H644M36 258H644" className="circuit-wire" /><circle cx="92" cy="72" r="8" className="circuit-node" /><circle cx="92" cy="165" r="8" className="circuit-node" /><circle cx="92" cy="258" r="8" className="circuit-node" />
-    <rect x="162" y="45" width="57" height="54" rx="10" className="circuit-gate" /><text x="190" y="78" textAnchor="middle" className="circuit-label">H</text><rect x="291" y="138" width="57" height="54" rx="10" className="circuit-gate secondary" /><text x="319" y="171" textAnchor="middle" className="circuit-label">X</text>
+function CircuitDiagram({ light = false, animated = true }: { light?: boolean; animated?: boolean }) {
+  const isAnimated = animated && !light;
+  const diagramClass = `circuit-diagram${light ? " light-diagram" : ""}${isAnimated ? " hero-circuit-diagram" : ""}`;
+  const animatedClass = (name: string) => isAnimated ? ` ${name}` : "";
+
+  return <svg viewBox="0 0 680 330" fill="none" aria-hidden="true" className={diagramClass}>
+    <path d="M36 72H644M36 165H644M36 258H644" className="circuit-wire" /><circle cx="92" cy="72" r="8" className={`circuit-node${animatedClass("circuit-node-top")}`} /><circle cx="92" cy="165" r="8" className={`circuit-node${animatedClass("circuit-node-middle")}`} /><circle cx="92" cy="258" r="8" className={`circuit-node${animatedClass("circuit-node-bottom")}`} />
+    {isAnimated && <g className="circuit-signals"><circle cx="106" cy="72" r="3" className="circuit-signal circuit-signal-h" /><circle cx="106" cy="165" r="3" className="circuit-signal circuit-signal-x" /><circle cx="220" cy="72" r="3" className="circuit-signal circuit-signal-control" /><circle cx="422" cy="86" r="3" className="circuit-signal circuit-signal-vertical" /><circle cx="348" cy="165" r="3" className="circuit-signal circuit-signal-measure" /></g>}
+    <g className={`circuit-gate-activation${animatedClass("circuit-gate-h")}`}><rect x="162" y="45" width="57" height="54" rx="10" className="circuit-gate" /><text x="190" y="78" textAnchor="middle" className="circuit-label">H</text></g><g className={`circuit-gate-activation${animatedClass("circuit-gate-x")}`}><rect x="291" y="138" width="57" height="54" rx="10" className="circuit-gate secondary" /><text x="319" y="171" textAnchor="middle" className="circuit-label">X</text></g>
     <path d="M422 72V258" className="circuit-link" /><circle cx="422" cy="72" r="12" className="circuit-control" /><circle cx="422" cy="258" r="19" className="circuit-target" /><path d="M409 258H435M422 245V271" className="circuit-cross" /><rect x="516" y="138" width="75" height="54" rx="10" className="circuit-gate tertiary" /><text x="553" y="171" textAnchor="middle" className="circuit-label small">M₀</text>
   </svg>;
 }
