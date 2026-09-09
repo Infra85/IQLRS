@@ -34,9 +34,7 @@ export default function RegisterPage() {
       throw new Error(data.detail || "Registration failed");
     }
 
-    alert("Registration successful! Please login.");
-
-    window.location.href = "/login";
+   window.location.href = `/verify-otp?email=${encodeURIComponent(email)}`;
   } catch (error) {
     console.error(error);
 
