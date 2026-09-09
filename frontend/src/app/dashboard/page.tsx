@@ -32,7 +32,7 @@ export default function DashboardPage() {
 
   const handleLogout = () => {
   localStorage.removeItem("access_token");
-  window.location.href = "/login";
+  window.location.href = "/";
 };
   useEffect(() => {
     const fetchDashboard = async () => {
