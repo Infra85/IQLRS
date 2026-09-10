@@ -25,8 +25,9 @@ def register(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
         )
-otp = str(random.randint(100000, 999999))
-otp_expires_at = datetime.utcnow() + timedelta(minutes=10)
+
+    otp = str(random.randint(100000, 999999))
+    otp_expires_at = datetime.utcnow() + timedelta(minutes=10)
 
     user = User(
         email=payload.email,
@@ -34,9 +35,9 @@ otp_expires_at = datetime.utcnow() + timedelta(minutes=10)
         name=payload.name,
         email_verified=False,
         otp_code=otp,
-        otp_expires_at=otp_expires_at
-)
-    
+        otp_expires_at=otp_expires_at,
+    )
+
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -65,7 +66,7 @@ def login(
             detail="Invalid email or password",
         )
 
-     if not user.email_verified:
+    if not user.email_verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Please verify your email before logging in",
@@ -80,7 +81,8 @@ def login(
         "token_type": "bearer",
     }
 
-    @router.post("/verify-otp")
+
+@router.post("/verify-otp")
 def verify_otp(
     email: str,
     otp: str,
@@ -126,4 +128,3 @@ def verify_otp(
     return {
         "message": "Email verified successfully",
     }
-
