@@ -4,6 +4,7 @@
 
 :root {
   color-scheme: dark;
+  --home-scroll-progress: 0;
   --ink-950: #070b18;
   --ink-900: #0b1020;
   --ink-800: #111a31;
@@ -22,6 +23,36 @@
   --signal-amber: #f7b955;
   --signal-rose: #f57a93;
 }
+
+/* Homepage: a contained dark-to-light quantum learning journey. */
+.homepage { background: #070b18; }
+.home-hero { background: linear-gradient(120deg, #070b18 0%, #0a1124 58%, #101835 100%); }
+.home-hero-grid { opacity: calc(.85 - var(--home-scroll-progress) * .65); background-image: linear-gradient(rgba(142, 164, 222, .08) 1px, transparent 1px), linear-gradient(90deg, rgba(142, 164, 222, .08) 1px, transparent 1px); background-size: 4rem 4rem; mask-image: linear-gradient(90deg, transparent, #000 22%, #000 85%, transparent); }
+.hero-halo { width: 35rem; height: 35rem; border-radius: 50%; filter: blur(3px); pointer-events: none; transition: transform .1s linear, opacity .1s linear; }
+.hero-halo-one { right: -10rem; top: -9rem; background: radial-gradient(circle, rgba(92,124,250,.18), transparent 67%); transform: translate3d(0, calc(var(--home-scroll-progress) * 80px), 0); opacity: calc(.9 - var(--home-scroll-progress) * .45); }
+.hero-halo-two { right: 28%; bottom: -19rem; background: radial-gradient(circle, rgba(48,201,215,.1), transparent 65%); transform: translate3d(0, calc(var(--home-scroll-progress) * -50px), 0); }
+.hero-circuit-stage { transform: translate3d(0, calc(var(--home-scroll-progress) * 48px), 0); opacity: calc(1 - var(--home-scroll-progress) * .38); transition: transform .075s linear, opacity .075s linear; }
+.hero-circuit-panel { overflow: hidden; }
+.hero-circuit-panel::before { content: ""; position: absolute; inset: 0; background: linear-gradient(112deg, transparent 25%, rgba(145,167,255,.07) 47%, transparent 62%); transform: translateX(-100%); animation: circuit-scan 8s ease-in-out infinite; }
+.circuit-diagram { position: relative; z-index: 1; display: block; width: 100%; height: auto; }
+.circuit-wire { stroke: rgba(174, 190, 235, .35); stroke-width: 2; }
+.circuit-node { fill: #0d1529; stroke: #30c9d7; stroke-width: 2; }
+.circuit-gate { fill: rgba(92,124,250,.23); stroke: #91a7ff; stroke-width: 1.5; }
+.circuit-gate.secondary { fill: rgba(48,201,215,.13); stroke: #30c9d7; }.circuit-gate.tertiary { fill: rgba(77,214,167,.13); stroke: #4dd6a7; }
+.circuit-label { fill: #f5f7ff; font: 600 20px Arial, sans-serif; }.circuit-label.small { font-size: 16px; }.circuit-link { stroke: #91a7ff; stroke-width: 2; stroke-dasharray: 4 4; }.circuit-control { fill: #91a7ff; }.circuit-target { fill: #0d1529; stroke: #91a7ff; stroke-width: 2; }.circuit-cross { stroke: #91a7ff; stroke-width: 2; }
+.hero-circuit-diagram .circuit-signal { fill: #30c9d7; opacity: 0; filter: drop-shadow(0 0 2px rgba(48,201,215,.45)); }
+.hero-circuit-diagram .circuit-signal-h { animation: signal-to-h 12s linear infinite; }.hero-circuit-diagram .circuit-signal-x { animation: signal-to-x 12s linear infinite; }.hero-circuit-diagram .circuit-signal-control { animation: signal-to-control 12s linear infinite; }.hero-circuit-diagram .circuit-signal-vertical { fill: #91a7ff; animation: signal-down-control 12s linear infinite; }.hero-circuit-diagram .circuit-signal-measure { fill: #4dd6a7; animation: signal-to-measure 12s linear infinite; }
+.hero-circuit-diagram .circuit-node { transform-box: fill-box; transform-origin: center; }.hero-circuit-diagram .circuit-node-top { animation: qubit-node-pulse 12s ease-out infinite; }.hero-circuit-diagram .circuit-node-middle { animation: qubit-node-pulse 12s 1.45s ease-out infinite; }.hero-circuit-diagram .circuit-node-bottom { animation: qubit-node-pulse 12s 4.8s ease-out infinite; }
+.hero-circuit-diagram .circuit-gate-activation { transform-box: fill-box; transform-origin: center; }.hero-circuit-diagram .circuit-gate-h { animation: gate-h-activation 12s ease-out infinite; }.hero-circuit-diagram .circuit-gate-x { animation: gate-x-activation 12s ease-out infinite; }.hero-circuit-diagram .circuit-target { transform-box: fill-box; transform-origin: center; animation: target-activation 12s ease-out infinite; }.hero-circuit-diagram .circuit-cross { animation: target-cross-activation 12s ease-out infinite; }
+.bar { display: block; width: .36rem; border-radius: 99px; background: linear-gradient(#30c9d7, #5c7cfa); }.scroll-cue-dot { display: inline-block; width: .5rem; height: .5rem; border-radius: 50%; background: #30c9d7; box-shadow: 0 0 0 5px rgba(48,201,215,.11); animation: cue-pulse 2.5s ease-out infinite; }
+.hero-probability .bar { transform-origin: bottom; animation: probability-state 12s ease-in-out infinite; }.hero-probability .bar:nth-child(2) { animation-delay: -.12s; }.hero-probability .bar:nth-child(3) { animation-delay: -.24s; }.hero-probability .bar:nth-child(4) { animation-delay: -.36s; }
+.home-transition { height: clamp(4rem, 12vw, 9rem); position: relative; overflow: hidden; background: linear-gradient(180deg, #0a1124 0%, #e9edf5 100%); }.home-transition span { position: absolute; left: 8%; right: 8%; top: 30%; height: 1px; background: linear-gradient(90deg, transparent, rgba(92,124,250,.65), rgba(48,201,215,.5), transparent); transform: scaleX(calc(.45 + var(--home-scroll-progress) * .55)); }
+.home-light { background: #f9fafc; }.eyebrow-light { color: #4263eb; font-size: .7rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
+.light-diagram .circuit-wire { stroke: #cbd5e1; }.light-diagram .circuit-node { fill: white; stroke: #4263eb; }.light-diagram .circuit-gate { fill: #eef2ff; stroke: #5c7cfa; }.light-diagram .circuit-gate.secondary { fill: #ecfeff; stroke: #0e9aac; }.light-diagram .circuit-gate.tertiary { fill: #ecfdf5; stroke: #20a479; }.light-diagram .circuit-label { fill: #253253; }.light-diagram .circuit-link { stroke: #5c7cfa; }.light-diagram .circuit-control { fill: #5c7cfa; }.light-diagram .circuit-target { fill: white; stroke: #5c7cfa; }.light-diagram .circuit-cross { stroke: #5c7cfa; }
+.build-grid { opacity: .5; background-image: linear-gradient(rgba(92,124,250,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(92,124,250,.08) 1px, transparent 1px); background-size: 3rem 3rem; mask-image: linear-gradient(90deg, transparent, #000 45%, transparent); }
+.capability-card { transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }.capability-card:hover { transform: translateY(-5px); box-shadow: 0 20px 36px rgba(27,43,77,.1); border-color: rgba(92,124,250,.35); }.capability-card > span { background: #eef2ff; color: #4263eb; }.capability-card > div > span { background: #5c7cfa; }.capability-cyan > span,.capability-cyan > div > span { color: #07879a; background-color: #e6fbfd; }.capability-cyan > div > span { background-color: #30c9d7; }.capability-mint > span { color: #168261; background: #e9fbf4; }.capability-mint > div > span { background: #4dd6a7; }.capability-amber > span { color: #b87612; background: #fff7e6; }.capability-amber > div > span { background: #f7b955; }.capability-rose > span { color: #c6546c; background: #fff0f3; }.capability-rose > div > span { background: #f57a93; }
+.home-reveal { animation: home-reveal both linear; animation-timeline: view(); animation-range: entry 8% cover 28%; }
+@keyframes circuit-scan { 0%, 20% { transform: translateX(-100%); } 55%, 100% { transform: translateX(160%); } } @keyframes cue-pulse { 0%, 100% { transform: scale(.8); opacity: .65; } 50% { transform: scale(1); opacity: 1; } } @keyframes signal-to-h { 0%, 4% { opacity: 0; transform: translateX(0); } 5%, 14% { opacity: .82; } 15%, 100% { opacity: 0; transform: translateX(56px); } } @keyframes signal-to-x { 0%, 14% { opacity: 0; transform: translateX(0); } 15%, 28% { opacity: .75; } 29%, 100% { opacity: 0; transform: translateX(178px); } } @keyframes signal-to-control { 0%, 22% { opacity: 0; transform: translateX(0); } 23%, 40% { opacity: .7; } 41%, 100% { opacity: 0; transform: translateX(202px); } } @keyframes signal-down-control { 0%, 40% { opacity: 0; transform: translateY(0); } 41%, 58% { opacity: .78; } 59%, 100% { opacity: 0; transform: translateY(154px); } } @keyframes signal-to-measure { 0%, 46% { opacity: 0; transform: translateX(0); } 47%, 69% { opacity: .62; } 70%, 100% { opacity: 0; transform: translateX(166px); } } @keyframes qubit-node-pulse { 0%, 8%, 100% { opacity: 1; transform: scale(1); } 4% { opacity: .86; transform: scale(1.22); } } @keyframes gate-h-activation { 0%, 14%, 21%, 100% { filter: brightness(1); opacity: 1; transform: scale(1); } 17% { filter: brightness(1.22); opacity: .98; transform: scale(1.045); } } @keyframes gate-x-activation { 0%, 28%, 35%, 100% { filter: brightness(1); opacity: 1; transform: scale(1); } 31% { filter: brightness(1.22); opacity: .98; transform: scale(1.045); } } @keyframes target-activation { 0%, 57%, 64%, 100% { filter: brightness(1); opacity: 1; transform: scale(1); } 60% { filter: brightness(1.24); opacity: .98; transform: scale(1.07); } } @keyframes target-cross-activation { 0%, 57%, 64%, 100% { opacity: 1; stroke-width: 2; } 60% { opacity: .98; stroke-width: 2.35; } } @keyframes probability-state { 0%, 56%, 100% { transform: scaleY(1); opacity: .9; } 63% { transform: scaleY(1.14); opacity: 1; } 76% { transform: scaleY(.92); opacity: .84; } 88% { transform: scaleY(1.04); opacity: .94; } } @keyframes home-reveal { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
 
 @layer base {
   * {
@@ -79,6 +110,9 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
+
+  .home-reveal { animation: none; }
+  .hero-circuit-stage, .hero-halo { transform: none; opacity: 1; }
 }
 
 @media (prefers-reduced-transparency: reduce) {
