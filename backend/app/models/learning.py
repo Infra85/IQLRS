@@ -1,15 +1,10 @@
 """Course, learning module, progress, and recommendation models."""
 
 from datetime import datetime
+from uuid import UUID, uuid4
 
-from sqlalchemy import (
-    String,
-    Integer,
-    Text,
-    DateTime,
-    ForeignKey,
-    Boolean,
-)
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -18,23 +13,61 @@ from app.core.database import Base
 class Course(Base):
     __tablename__ = "courses"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    course_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
+    )
 
     title: Mapped[str] = mapped_column(
-        String(200), nullable=False
+        String(200),
+        nullable=False,
     )
 
     description: Mapped[str | None] = mapped_column(
-        Text, nullable=True
+        Text,
+        nullable=True,
+    )
+
+    difficulty: Mapped[str] = mapped_column(
+        String(30),
+        default="beginner",
+        nullable=False,
+    )
+
+    created_by: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.user_id"),
+        nullable=False,
+    )
+
+    is_published: Mapped[bool] = mapped_column(
+        default=False,
+        nullable=False,
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow
+        DateTime(timezone=True),
+        default=datetime.utcnow,
+        nullable=False,
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False,
+    )
+
+    creator = relationship(
+        "User",
+        foreign_keys=[created_by],
     )
 
     modules = relationship(
         "LearningModule",
         back_populates="course",
+        cascade="all, delete-orphan",
     )
 
     enrollments = relationship(
@@ -46,23 +79,61 @@ class Course(Base):
 class LearningModule(Base):
     __tablename__ = "learning_modules"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    module_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
+    )
 
-    course_id: Mapped[int] = mapped_column(
-        ForeignKey("courses.id"),
+    course_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("courses.course_id"),
         nullable=False,
     )
 
     title: Mapped[str] = mapped_column(
-        String(200), nullable=False
+        String(200),
+        nullable=False,
     )
 
     description: Mapped[str | None] = mapped_column(
-        Text, nullable=True
+        Text,
+        nullable=True,
+    )
+
+    content: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
     )
 
     module_order: Mapped[int] = mapped_column(
-        Integer, default=1
+        Integer,
+        default=1,
+        nullable=False,
+    )
+
+    difficulty: Mapped[str] = mapped_column(
+        String(30),
+        default="beginner",
+        nullable=False,
+    )
+
+    estimated_minutes: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=datetime.utcnow,
+        nullable=False,
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False,
     )
 
     course = relationship(
@@ -73,44 +144,62 @@ class LearningModule(Base):
     progress = relationship(
         "ModuleProgress",
         back_populates="module",
+        cascade="all, delete-orphan",
     )
 
     coding_challenges = relationship(
         "CodingChallenge",
         back_populates="module",
+        cascade="all, delete-orphan",
     )
 
 
 class ModuleProgress(Base):
     __tablename__ = "module_progress"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    progress_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
+    )
 
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"),
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.user_id"),
         nullable=False,
     )
 
-    module_id: Mapped[int] = mapped_column(
-        ForeignKey("learning_modules.id"),
+    module_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("learning_modules.module_id"),
         nullable=False,
     )
 
-    progress_percent: Mapped[int] = mapped_column(
-        Integer, default=0
+    status: Mapped[str] = mapped_column(
+        String(30),
+        default="not_started",
+        nullable=False,
     )
 
-    completed: Mapped[bool] = mapped_column(
-        Boolean, default=False
+    completion_pct: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
     )
 
-    score: Mapped[int] = mapped_column(
-        Integer, default=0
+    started_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
     )
 
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    last_accessed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
     )
 
     user = relationship(
@@ -127,15 +216,21 @@ class ModuleProgress(Base):
 class LearningRecommendation(Base):
     __tablename__ = "learning_recommendations"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    recommendation_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
+    )
 
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"),
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.user_id"),
         nullable=False,
     )
 
-    module_id: Mapped[int | None] = mapped_column(
-        ForeignKey("learning_modules.id"),
+    module_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("learning_modules.module_id"),
         nullable=True,
     )
 
@@ -144,7 +239,33 @@ class LearningRecommendation(Base):
         nullable=True,
     )
 
+    priority: Mapped[int] = mapped_column(
+        Integer,
+        default=1,
+        nullable=False,
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(30),
+        default="pending",
+        nullable=False,
+    )
+
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         default=datetime.utcnow,
+        nullable=False,
+    )
+
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    user = relationship(
+        "User",
+    )
+
+    module = relationship(
+        "LearningModule",
     )
