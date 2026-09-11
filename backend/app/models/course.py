@@ -1,9 +1,14 @@
 """Course enrollment and assignment models."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    String,
+)
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -21,13 +26,13 @@ class CourseEnrollment(Base):
 
     course_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("courses.course_id"),
+        ForeignKey("courses.course_id", ondelete="CASCADE"),
         nullable=False,
     )
 
     user_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("users.user_id"),
+        ForeignKey("users.user_id", ondelete="CASCADE"),
         nullable=False,
     )
 
@@ -39,7 +44,7 @@ class CourseEnrollment(Base):
 
     enrolled_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
@@ -65,25 +70,25 @@ class CourseAssignment(Base):
 
     course_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("courses.course_id"),
+        ForeignKey("courses.course_id", ondelete="CASCADE"),
         nullable=False,
     )
 
     module_id: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("learning_modules.module_id"),
+        ForeignKey("learning_modules.module_id", ondelete="CASCADE"),
         nullable=True,
     )
 
     assessment_id: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("assessments.assessment_id"),
+        ForeignKey("assessments.assessment_id", ondelete="CASCADE"),
         nullable=True,
     )
 
     assigned_by: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("users.user_id"),
+        ForeignKey("users.user_id", ondelete="CASCADE"),
         nullable=False,
     )
 
@@ -94,7 +99,7 @@ class CourseAssignment(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
@@ -113,4 +118,11 @@ class CourseAssignment(Base):
     assigned_by_user = relationship(
         "User",
         foreign_keys=[assigned_by],
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "module_id IS NOT NULL OR assessment_id IS NOT NULL",
+            name="ck_assignment_has_target",
+        ),
     )

@@ -1,9 +1,17 @@
 """Course, learning module, progress, and recommendation models."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -37,25 +45,26 @@ class Course(Base):
 
     created_by: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("users.user_id"),
+        ForeignKey("users.user_id", ondelete="RESTRICT"),
         nullable=False,
     )
 
     is_published: Mapped[bool] = mapped_column(
+        Boolean,
         default=False,
         nullable=False,
     )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
@@ -73,6 +82,7 @@ class Course(Base):
     enrollments = relationship(
         "CourseEnrollment",
         back_populates="course",
+        cascade="all, delete-orphan",
     )
 
 
@@ -87,7 +97,7 @@ class LearningModule(Base):
 
     course_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("courses.course_id"),
+        ForeignKey("courses.course_id", ondelete="CASCADE"),
         nullable=False,
     )
 
@@ -125,14 +135,14 @@ class LearningModule(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
@@ -165,13 +175,13 @@ class ModuleProgress(Base):
 
     user_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("users.user_id"),
+        ForeignKey("users.user_id", ondelete="CASCADE"),
         nullable=False,
     )
 
     module_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("learning_modules.module_id"),
+        ForeignKey("learning_modules.module_id", ondelete="CASCADE"),
         nullable=False,
     )
 
@@ -212,6 +222,14 @@ class ModuleProgress(Base):
         back_populates="progress",
     )
 
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "module_id",
+            name="uq_module_progress_user_module",
+        ),
+    )
+
 
 class LearningRecommendation(Base):
     __tablename__ = "learning_recommendations"
@@ -224,13 +242,13 @@ class LearningRecommendation(Base):
 
     user_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("users.user_id"),
+        ForeignKey("users.user_id", ondelete="CASCADE"),
         nullable=False,
     )
 
     module_id: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("learning_modules.module_id"),
+        ForeignKey("learning_modules.module_id", ondelete="SET NULL"),
         nullable=True,
     )
 
@@ -253,7 +271,7 @@ class LearningRecommendation(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 

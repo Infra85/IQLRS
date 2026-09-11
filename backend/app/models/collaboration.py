@@ -1,9 +1,17 @@
 """Project, contribution, and shared resource models."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, JSON, String, Text
+from sqlalchemy import (
+    DateTime,
+    ForeignKey,
+    JSON,
+    String,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -21,7 +29,7 @@ class Project(Base):
 
     owner_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("users.user_id"),
+        ForeignKey("users.user_id", ondelete="CASCADE"),
         nullable=False,
     )
 
@@ -43,20 +51,18 @@ class Project(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
-    owner = relationship(
-        "User",
-    )
+    owner = relationship("User")
 
     members = relationship(
         "ProjectMember",
@@ -82,19 +88,19 @@ class ProjectMember(Base):
 
     project_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("projects.project_id"),
+        ForeignKey("projects.project_id", ondelete="CASCADE"),
         nullable=False,
     )
 
     user_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("users.user_id"),
+        ForeignKey("users.user_id", ondelete="CASCADE"),
         nullable=False,
     )
 
     joined_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
@@ -103,8 +109,14 @@ class ProjectMember(Base):
         back_populates="members",
     )
 
-    user = relationship(
-        "User",
+    user = relationship("User")
+
+    __table_args__ = (
+        UniqueConstraint(
+            "project_id",
+            "user_id",
+            name="uq_project_member",
+        ),
     )
 
 
@@ -119,7 +131,7 @@ class Contribution(Base):
 
     project_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("projects.project_id"),
+        ForeignKey("projects.project_id", ondelete="CASCADE"),
         nullable=False,
     )
 
@@ -141,7 +153,7 @@ class Contribution(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
@@ -168,19 +180,19 @@ class ContributionMember(Base):
 
     contribution_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("contributions.contribution_id"),
+        ForeignKey("contributions.contribution_id", ondelete="CASCADE"),
         nullable=False,
     )
 
     user_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("users.user_id"),
+        ForeignKey("users.user_id", ondelete="CASCADE"),
         nullable=False,
     )
 
     joined_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
@@ -189,8 +201,14 @@ class ContributionMember(Base):
         back_populates="members",
     )
 
-    user = relationship(
-        "User",
+    user = relationship("User")
+
+    __table_args__ = (
+        UniqueConstraint(
+            "contribution_id",
+            "user_id",
+            name="uq_contribution_member",
+        ),
     )
 
 
@@ -205,19 +223,19 @@ class SharedResource(Base):
 
     owner_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("users.user_id"),
+        ForeignKey("users.user_id", ondelete="CASCADE"),
         nullable=False,
     )
 
     project_id: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("projects.project_id"),
+        ForeignKey("projects.project_id", ondelete="CASCADE"),
         nullable=True,
     )
 
     circuit_id: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("circuits.circuit_id"),
+        ForeignKey("circuits.circuit_id", ondelete="CASCADE"),
         nullable=True,
     )
 
@@ -237,20 +255,18 @@ class SharedResource(Base):
     )
 
     resource_data: Mapped[dict | None] = mapped_column(
-        JSON,
+        JSONB,
         nullable=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
-    owner = relationship(
-        "User",
-    )
+    owner = relationship("User")
 
-    project = relationship(
-        "Project",
-    )
+    project = relationship("Project")
+
+    circuit = relationship("Circuit")

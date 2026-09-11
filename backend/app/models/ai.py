@@ -1,9 +1,10 @@
 """AI tutor and conversation models."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, JSON, String, Text
+from sqlalchemy import DateTime, ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -21,13 +22,13 @@ class AIConversation(Base):
 
     user_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("users.user_id"),
+        ForeignKey("users.user_id", ondelete="CASCADE"),
         nullable=False,
     )
 
     circuit_id: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("circuits.circuit_id"),
+        ForeignKey("circuits.circuit_id", ondelete="SET NULL"),
         nullable=True,
     )
 
@@ -38,14 +39,14 @@ class AIConversation(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
@@ -54,6 +55,10 @@ class AIConversation(Base):
         back_populates="conversation",
         cascade="all, delete-orphan",
     )
+
+    user = relationship("User")
+
+    circuit = relationship("Circuit")
 
 
 class AIMessage(Base):
@@ -67,7 +72,7 @@ class AIMessage(Base):
 
     conversation_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("ai_conversations.conversation_id"),
+        ForeignKey("ai_conversations.conversation_id", ondelete="CASCADE"),
         nullable=False,
     )
 
@@ -82,13 +87,13 @@ class AIMessage(Base):
     )
 
     context_data: Mapped[dict | None] = mapped_column(
-        JSON,
+        JSONB,
         nullable=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 

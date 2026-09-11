@@ -1,9 +1,17 @@
 """Coding challenge and code submission models."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Integer, JSON, String, Text
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -21,7 +29,10 @@ class CodingChallenge(Base):
 
     module_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("learning_modules.module_id"),
+        ForeignKey(
+            "learning_modules.module_id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
     )
 
@@ -51,7 +62,7 @@ class CodingChallenge(Base):
     )
 
     expected_output: Mapped[dict | None] = mapped_column(
-        JSON,
+        JSONB,
         nullable=True,
     )
 
@@ -74,7 +85,7 @@ class CodingChallenge(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
@@ -101,13 +112,19 @@ class CodeSubmission(Base):
 
     challenge_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("coding_challenges.challenge_id"),
+        ForeignKey(
+            "coding_challenges.challenge_id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
     )
 
     user_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("users.user_id"),
+        ForeignKey(
+            "users.user_id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
     )
 
@@ -137,6 +154,7 @@ class CodeSubmission(Base):
     )
 
     passed: Mapped[bool] = mapped_column(
+        Boolean,
         default=False,
         nullable=False,
     )
@@ -148,7 +166,7 @@ class CodeSubmission(Base):
 
     submitted_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 

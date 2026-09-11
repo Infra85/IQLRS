@@ -1,9 +1,16 @@
 """Gamification models."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -15,7 +22,7 @@ class UserGamification(Base):
 
     user_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("users.user_id"),
+        ForeignKey("users.user_id", ondelete="CASCADE"),
         primary_key=True,
     )
 
@@ -45,13 +52,14 @@ class UserGamification(Base):
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
     user = relationship(
         "User",
+        back_populates="gamification",
     )
 
 
@@ -88,7 +96,7 @@ class Badge(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
@@ -110,27 +118,36 @@ class UserBadge(Base):
 
     user_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("users.user_id"),
+        ForeignKey("users.user_id", ondelete="CASCADE"),
         nullable=False,
     )
 
     badge_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("badges.badge_id"),
+        ForeignKey("badges.badge_id", ondelete="CASCADE"),
         nullable=False,
     )
 
     awarded_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
     user = relationship(
         "User",
+        back_populates="badges",
     )
 
     badge = relationship(
         "Badge",
         back_populates="user_badges",
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "badge_id",
+            name="uq_user_badge",
+        ),
     )

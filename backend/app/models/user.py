@@ -1,4 +1,4 @@
-"""User, role, and gamification models."""
+"""User, role models."""
 
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
@@ -193,47 +193,3 @@ class UserRole(Base):
     )
 
 
-class UserGamification(Base):
-    __tablename__ = "user_gamification"
-
-    user_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True),
-        ForeignKey("users.user_id", ondelete="CASCADE"),
-        primary_key=True,
-    )
-
-    xp: Mapped[int] = mapped_column(
-        Integer,
-        default=0,
-        nullable=False,
-    )
-
-    level: Mapped[int] = mapped_column(
-        Integer,
-        default=1,
-        nullable=False,
-    )
-
-    current_streak: Mapped[int] = mapped_column(
-        Integer,
-        default=0,
-        nullable=False,
-    )
-
-    longest_streak: Mapped[int] = mapped_column(
-        Integer,
-        default=0,
-        nullable=False,
-    )
-
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
-        nullable=False,
-    )
-
-    user = relationship(
-        "User",
-        back_populates="gamification",
-    )

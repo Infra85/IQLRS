@@ -1,9 +1,16 @@
 """Quantum circuit, gate, version, and simulation models."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -21,7 +28,10 @@ class Circuit(Base):
 
     user_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("users.user_id"),
+        ForeignKey(
+            "users.user_id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
     )
 
@@ -65,14 +75,14 @@ class Circuit(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
@@ -151,13 +161,19 @@ class CircuitGate(Base):
 
     circuit_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("circuits.circuit_id"),
+        ForeignKey(
+            "circuits.circuit_id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
     )
 
     gate_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("quantum_gates.gate_id"),
+        ForeignKey(
+            "quantum_gates.gate_id",
+            ondelete="RESTRICT",
+        ),
         nullable=False,
     )
 
@@ -209,7 +225,10 @@ class CircuitVersion(Base):
 
     circuit_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("circuits.circuit_id"),
+        ForeignKey(
+            "circuits.circuit_id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
     )
 
@@ -237,13 +256,16 @@ class CircuitVersion(Base):
 
     created_by: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("users.user_id"),
+        ForeignKey(
+            "users.user_id",
+            ondelete="RESTRICT",
+        ),
         nullable=False,
     )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
@@ -255,6 +277,14 @@ class CircuitVersion(Base):
     creator = relationship(
         "User",
         foreign_keys=[created_by],
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "circuit_id",
+            "version_number",
+            name="uq_circuit_version_number",
+        ),
     )
 
 
@@ -269,13 +299,19 @@ class SimulationRun(Base):
 
     circuit_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("circuits.circuit_id"),
+        ForeignKey(
+            "circuits.circuit_id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
     )
 
     user_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("users.user_id"),
+        ForeignKey(
+            "users.user_id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
     )
 
@@ -344,7 +380,10 @@ class SimulationResult(Base):
 
     simulation_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("simulation_runs.simulation_id"),
+        ForeignKey(
+            "simulation_runs.simulation_id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
         unique=True,
     )
@@ -376,7 +415,7 @@ class SimulationResult(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 

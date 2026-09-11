@@ -1,9 +1,18 @@
 """Assessment and question models."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -21,7 +30,10 @@ class Assessment(Base):
 
     module_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("learning_modules.module_id"),
+        ForeignKey(
+            "learning_modules.module_id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
     )
 
@@ -55,7 +67,7 @@ class Assessment(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
@@ -83,7 +95,10 @@ class Question(Base):
 
     assessment_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("assessments.assessment_id"),
+        ForeignKey(
+            "assessments.assessment_id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
     )
 
@@ -126,6 +141,14 @@ class Question(Base):
         back_populates="question",
     )
 
+    __table_args__ = (
+        UniqueConstraint(
+            "assessment_id",
+            "question_order",
+            name="uq_question_assessment_order",
+        ),
+    )
+
 
 class QuestionOption(Base):
     __tablename__ = "question_options"
@@ -138,7 +161,10 @@ class QuestionOption(Base):
 
     question_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("questions.question_id"),
+        ForeignKey(
+            "questions.question_id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
     )
 
@@ -148,6 +174,7 @@ class QuestionOption(Base):
     )
 
     is_correct: Mapped[bool] = mapped_column(
+        Boolean,
         default=False,
         nullable=False,
     )
@@ -169,13 +196,19 @@ class AssessmentAttempt(Base):
 
     assessment_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("assessments.assessment_id"),
+        ForeignKey(
+            "assessments.assessment_id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
     )
 
     user_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("users.user_id"),
+        ForeignKey(
+            "users.user_id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
     )
 
@@ -192,6 +225,7 @@ class AssessmentAttempt(Base):
     )
 
     percentage: Mapped[float] = mapped_column(
+        Float,
         default=0,
         nullable=False,
     )
@@ -204,7 +238,7 @@ class AssessmentAttempt(Base):
 
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
@@ -216,6 +250,10 @@ class AssessmentAttempt(Base):
     assessment = relationship(
         "Assessment",
         back_populates="attempts",
+    )
+
+    user = relationship(
+        "User",
     )
 
     answers = relationship(
@@ -236,19 +274,28 @@ class QuestionAnswer(Base):
 
     attempt_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("assessment_attempts.attempt_id"),
+        ForeignKey(
+            "assessment_attempts.attempt_id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
     )
 
     question_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("questions.question_id"),
+        ForeignKey(
+            "questions.question_id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
     )
 
     selected_option_id: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("question_options.option_id"),
+        ForeignKey(
+            "question_options.option_id",
+            ondelete="SET NULL",
+        ),
         nullable=True,
     )
 
@@ -258,6 +305,7 @@ class QuestionAnswer(Base):
     )
 
     is_correct: Mapped[bool] = mapped_column(
+        Boolean,
         default=False,
         nullable=False,
     )
