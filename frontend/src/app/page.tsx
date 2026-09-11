@@ -1,53 +1,22 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowRight, Bot, Braces, CircuitBoard, GraduationCap, Layers3 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-
-const capabilities = [
-  { title: "Interactive Learning", detail: "[INTERACTIVE LEARNING PLACEHOLDER]", icon: GraduationCap, accent: "cyan" },
-  { title: "Quantum Algorithm Learning", detail: "[QUANTUM ALGORITHM LEARNING PLACEHOLDER]", icon: Layers3, accent: "indigo" },
-  { title: "Circuit Builder", detail: "[CIRCUIT BUILDER PLACEHOLDER]", icon: CircuitBoard, accent: "mint" },
-  { title: "Code Lab", detail: "[CODE LAB PLACEHOLDER]", icon: Braces, accent: "amber" },
-  { title: "AI Assistance", detail: "[AI ASSISTANCE PLACEHOLDER]", icon: Bot, accent: "rose" },
-];
-
-function CircuitDiagram({ light = false, animated = true }: { light?: boolean; animated?: boolean }) {
-  const isAnimated = animated && !light;
-  const diagramClass = `circuit-diagram${light ? " light-diagram" : ""}${isAnimated ? " hero-circuit-diagram" : ""}`;
-  const animatedClass = (name: string) => isAnimated ? ` ${name}` : "";
-
-  return <svg viewBox="0 0 680 330" fill="none" aria-hidden="true" className={diagramClass}>
-    <path d="M36 72H644M36 165H644M36 258H644" className="circuit-wire" /><circle cx="92" cy="72" r="8" className={`circuit-node${animatedClass("circuit-node-top")}`} /><circle cx="92" cy="165" r="8" className={`circuit-node${animatedClass("circuit-node-middle")}`} /><circle cx="92" cy="258" r="8" className={`circuit-node${animatedClass("circuit-node-bottom")}`} />
-    {isAnimated && <g className="circuit-signals"><circle cx="106" cy="72" r="3" className="circuit-signal circuit-signal-h" /><circle cx="106" cy="165" r="3" className="circuit-signal circuit-signal-x" /><circle cx="220" cy="72" r="3" className="circuit-signal circuit-signal-control" /><circle cx="422" cy="86" r="3" className="circuit-signal circuit-signal-vertical" /><circle cx="348" cy="165" r="3" className="circuit-signal circuit-signal-measure" /></g>}
-    <g className={`circuit-gate-activation${animatedClass("circuit-gate-h")}`}><rect x="162" y="45" width="57" height="54" rx="10" className="circuit-gate" /><text x="190" y="78" textAnchor="middle" className="circuit-label">H</text></g><g className={`circuit-gate-activation${animatedClass("circuit-gate-x")}`}><rect x="291" y="138" width="57" height="54" rx="10" className="circuit-gate secondary" /><text x="319" y="171" textAnchor="middle" className="circuit-label">X</text></g>
-    <path d="M422 72V258" className="circuit-link" /><circle cx="422" cy="72" r="12" className="circuit-control" /><circle cx="422" cy="258" r="19" className="circuit-target" /><path d="M409 258H435M422 245V271" className="circuit-cross" /><rect x="516" y="138" width="75" height="54" rx="10" className="circuit-gate tertiary" /><text x="553" y="171" textAnchor="middle" className="circuit-label small">M₀</text>
-  </svg>;
-}
+import { QuantumLandingScene } from "@/components/quantum-landing-scene";
 
 export default function Home() {
   const [loggedIn, setLoggedIn] = useState(false);
-  const [showLogout, setShowLogout] = useState(false);
-  useEffect(() => {
-    setLoggedIn(!!localStorage.getItem("access_token"));
-    const update = () => { const hero = document.getElementById("quantum-hero"); if (hero) document.documentElement.style.setProperty("--home-scroll-progress", Math.min(Math.max(window.scrollY / Math.max(hero.offsetHeight * .82, 1), 0), 1).toFixed(3)); };
-    update(); window.addEventListener("scroll", update, { passive: true }); window.addEventListener("resize", update);
-    return () => { window.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
-  }, []);
-  const handleLogout = () => { localStorage.removeItem("access_token"); setLoggedIn(false); setShowLogout(false); window.location.href = "/"; };
+  useEffect(() => setLoggedIn(Boolean(localStorage.getItem("access_token"))), []);
 
-  return <main className="homepage overflow-hidden">
-    <section id="quantum-hero" className="home-hero relative isolate min-h-[calc(100svh-4.5rem)]"><div className="home-hero-grid absolute inset-0" aria-hidden="true" /><div className="hero-halo hero-halo-one absolute" aria-hidden="true" /><div className="hero-halo hero-halo-two absolute" aria-hidden="true" />
-      <div className="relative mx-auto flex min-h-[calc(100svh-4.5rem)] max-w-7xl items-center px-5 py-20 sm:px-8 lg:px-10"><div className="grid w-full items-center gap-14 lg:grid-cols-[minmax(0,.9fr)_minmax(28rem,1.1fr)] lg:gap-10">
-        <div className="relative z-10 max-w-2xl"><p className="mb-6 flex items-center gap-3 text-xs font-semibold uppercase tracking-[.2em] text-signal-cyan"><span className="h-px w-9 bg-signal-cyan/70" />IQLRS · Quantum learning environment</p><h1 className="max-w-xl text-5xl font-semibold leading-[.96] tracking-[-.055em] text-white sm:text-6xl lg:text-7xl">Learn the logic behind <span className="text-quantum-300">quantum.</span></h1><p className="mt-7 max-w-xl text-base leading-7 text-slate-300 sm:text-lg">Intelligent Quantum Learning And Research System — an interactive space to explore quantum ideas, algorithms, and circuits.</p><div className="mt-9 flex flex-wrap gap-3"><Button asChild size="lg" className="home-primary-cta"><Link href="/learn">Start Learning <ArrowRight size={17} /></Link></Button><Button asChild variant="secondary" size="lg" className="border-white/15 bg-white/[.045]"><Link href="/builder"><CircuitBoard size={17} /> Circuit Builder</Link></Button></div><p className="mt-11 flex items-center gap-3 text-xs font-medium uppercase tracking-[.12em] text-slate-500"><span className="scroll-cue-dot" />Scroll to enter the learning space</p></div>
-        <div className="hero-circuit-stage relative mx-auto w-full max-w-[42rem]" aria-label="Illustration of a quantum circuit with qubits and gates"><div className="hero-state-card absolute left-0 top-4 hidden rounded-xl border border-white/10 bg-ink-900/70 px-4 py-3 backdrop-blur-md sm:block"><p className="text-[10px] font-semibold uppercase tracking-[.16em] text-slate-500">Qubit state</p><p className="mt-1 font-mono text-sm text-signal-cyan">|ψ⟩ = α|0⟩ + β|1⟩</p></div><div className="hero-circuit-panel relative rounded-[2rem] border border-white/[.12] bg-[#0d1529]/80 p-4 shadow-[0_28px_90px_rgba(0,0,0,.34)] backdrop-blur-sm sm:p-7"><div className="mb-5 flex items-center justify-between border-b border-white/[.08] pb-4"><span className="font-mono text-xs text-slate-400">circuit / exploration-01</span><span className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[.15em] text-signal-mint"><i className="h-1.5 w-1.5 rounded-full bg-signal-mint" /> ready</span></div><CircuitDiagram /></div><div className="hero-probability absolute -bottom-5 right-2 rounded-xl border border-white/10 bg-ink-900/85 p-4 shadow-panel backdrop-blur-md sm:right-8"><p className="text-[10px] font-semibold uppercase tracking-[.14em] text-slate-500">Probability</p><div className="mt-3 flex items-end gap-1.5" aria-hidden="true"><i className="bar h-5" /><i className="bar h-9" /><i className="bar h-14" /><i className="bar h-7" /></div></div></div>
-      </div></div>
-      <div className="home-account-control absolute right-5 top-5 z-20 sm:right-8">{loggedIn ? <div className="relative"><button onClick={() => setShowLogout(v => !v)} className="rounded-xl border border-white/15 bg-ink-900/70 px-3 py-2 text-xs font-semibold text-slate-200 backdrop-blur transition hover:border-quantum-300/60" aria-expanded={showLogout}>Account</button>{showLogout && <div className="absolute right-0 mt-2 rounded-xl border border-white/10 bg-ink-900 p-1.5 shadow-panel"><button onClick={handleLogout} className="rounded-lg px-3 py-2 text-sm text-slate-200 transition hover:bg-white/[.08]">Logout</button></div>}</div> : <Link href="/login" className="rounded-xl border border-quantum-300/35 bg-ink-900/60 px-3 py-2 text-xs font-semibold text-quantum-100 backdrop-blur transition hover:border-quantum-300 hover:bg-quantum-500/15">Login / Register</Link>}</div>
-    </section><div className="home-transition" aria-hidden="true"><span /></div>
-    <div className="home-light text-[#18223a]"><section className="mx-auto grid max-w-7xl gap-12 px-5 pb-28 pt-12 sm:px-8 md:pt-20 lg:grid-cols-[1fr_.9fr] lg:gap-20 lg:px-10"><div className="home-reveal"><p className="eyebrow-light">Foundation</p><h2 className="mt-5 max-w-xl text-4xl font-semibold leading-[1.02] tracking-[-.045em] text-[#18223a] sm:text-5xl">What is IQLRS?</h2><p className="mt-7 max-w-xl text-lg leading-8 text-slate-600">[INTRODUCTION CONTENT PLACEHOLDER]</p><div className="mt-9 border-l-2 border-quantum-500 pl-5 text-sm leading-7 text-slate-500">[PLATFORM DESCRIPTION PLACEHOLDER]</div></div><div className="home-reveal light-circuit-card rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-[0_22px_55px_rgba(27,43,77,.09)] sm:p-7"><div className="flex items-center justify-between"><span className="font-mono text-xs text-slate-500">conceptual circuit</span><span className="rounded-full bg-quantum-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-quantum-700">diagram</span></div><CircuitDiagram light /><p className="border-t border-slate-100 pt-4 text-sm leading-6 text-slate-500">[QUANTUM DIAGRAM PLACEHOLDER]</p></div></section>
-      <section className="border-y border-slate-200/80 bg-[#f1f3f7] py-24 sm:py-28"><div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10"><div className="max-w-2xl home-reveal"><p className="eyebrow-light">Platform capabilities</p><h2 className="mt-5 text-4xl font-semibold leading-[1.04] tracking-[-.045em] text-[#18223a] sm:text-5xl">A place for each step of the learning process.</h2><p className="mt-5 text-base leading-7 text-slate-600">[PLATFORM CAPABILITIES INTRODUCTION PLACEHOLDER]</p></div><div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{capabilities.map(({ title, detail, icon: Icon, accent }, index) => <article key={title} className={`capability-card capability-${accent} home-reveal rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(27,43,77,.06)]`} style={{ transitionDelay: `${index * 55}ms` }}><span className="grid h-11 w-11 place-items-center rounded-xl"><Icon size={20} strokeWidth={1.8} /></span><h3 className="mt-7 text-xl font-semibold tracking-[-.025em] text-[#202b45]">{title}</h3><p className="mt-3 text-sm leading-6 text-slate-500">{detail}</p><div className="mt-7 h-px w-full bg-slate-100"><span className="block h-px w-1/3" /></div></article>)}<article className="home-reveal hidden rounded-2xl border border-dashed border-slate-300 p-6 lg:block"><p className="font-mono text-xs uppercase tracking-[.16em] text-slate-400">Future module</p><p className="mt-20 text-sm leading-6 text-slate-500">[ADDITIONAL PLATFORM AREA PLACEHOLDER]</p></article></div></div></section>
-      <section className="home-build-section relative overflow-hidden bg-[#e8edf7] px-5 py-24 sm:px-8 sm:py-28 lg:px-10"><div className="build-grid absolute inset-0" aria-hidden="true" /><div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[.9fr_1.1fr]"><div className="home-reveal"><p className="eyebrow-light">Build + experiment</p><h2 className="mt-5 text-4xl font-semibold leading-[1.04] tracking-[-.045em] text-[#18223a] sm:text-5xl">Make quantum concepts visible.</h2><p className="mt-6 max-w-md text-base leading-7 text-slate-600">[BUILD AND EXPERIMENT CONTENT PLACEHOLDER]</p><Link href="/builder" className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-quantum-700 transition hover:text-quantum-900">Open Circuit Builder <ArrowRight size={16} /></Link></div><div className="home-reveal rounded-[1.75rem] border border-white/80 bg-white/70 p-5 shadow-[0_24px_54px_rgba(36,54,92,.1)] backdrop-blur sm:p-8"><CircuitDiagram light /></div></div></section>
-      <section className="bg-[#18223a] px-5 py-24 text-white sm:px-8 sm:py-28 lg:px-10"><div className="home-reveal mx-auto max-w-3xl text-center"><p className="text-xs font-semibold uppercase tracking-[.2em] text-signal-cyan">Next step</p><h2 className="mt-5 text-4xl font-semibold leading-[1.04] tracking-[-.045em] sm:text-5xl">[FINAL CALL TO ACTION PLACEHOLDER]</h2><p className="mx-auto mt-6 max-w-xl text-base leading-7 text-slate-300">[FINAL CTA SUPPORTING CONTENT PLACEHOLDER]</p><Button asChild size="lg" className="mt-9"><Link href="/learn">Start Learning <ArrowRight size={17} /></Link></Button></div></section>
-    </div></main>;
+  return (
+    <main className="homepage">
+      <div className="home-account-control">{loggedIn ? <a href="/dashboard">ACCOUNT / DASHBOARD</a> : <a href="/login">LOGIN / REGISTER</a>}</div>
+      <QuantumLandingScene />
+      <section className="landing-quiet-section">
+        <p className="system-label"><span />IQLRS / LEARNING ENVIRONMENT</p>
+        <div><h2>FROM FIRST<br />PRINCIPLES TO<br /><em>REAL CIRCUITS.</em></h2></div>
+        <p className="quiet-description">The learning path preserves the details that make quantum computing rigorous: states, amplitudes, measurements, algorithms, and practical circuit experiments.</p>
+        <div className="landing-links"><a href="/learn">Browse modules <b>→</b></a><a href="/editor">Use the code lab <b>→</b></a><a href="/dashboard">Track progress <b>→</b></a></div>
+      </section>
+    </main>
+  );
 }

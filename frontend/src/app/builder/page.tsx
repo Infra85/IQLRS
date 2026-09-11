@@ -24,7 +24,7 @@ export default function BuilderPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-950 p-8 text-white">
+    <main className="builder-workbench min-h-screen p-8 text-white">
 
       {/* Login Recommendation Popup */}
       {showLoginPopup && !loggedIn && (
@@ -91,7 +91,8 @@ export default function BuilderPage() {
 
       </div>
 
-      <h1 className="mt-4 text-3xl font-bold">
+      <p className="system-label mt-12"><span />SIMULATOR / LIVE INSTRUMENT</p>
+      <h1 className="builder-title mt-4 text-3xl font-bold">
         Quantum Circuit Builder
       </h1>
 

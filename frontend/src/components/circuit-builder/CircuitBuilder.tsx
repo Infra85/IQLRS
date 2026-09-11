@@ -157,7 +157,7 @@ export default function CircuitBuilder() {
   }
 
   return (
-    <div className="mt-8 space-y-8">
+    <div className="circuit-builder-system mt-8 space-y-8">
       {challenge && <section className="rounded-xl border border-quantum-700 bg-quantum-950/30 p-5"><h2 className="text-xl font-semibold">{challenge.title}</h2><p className="mt-2 text-sm leading-6 text-gray-300">{challenge.instructions}</p><button type="button" onClick={loadChallengeCircuit} className="mt-4 rounded-lg border border-quantum-400 px-4 py-2 text-sm font-medium text-quantum-200 hover:bg-quantum-900">Load guided circuit</button>{challengeStatus && <p className={`mt-4 rounded-lg p-3 text-sm ${challengeStatus.startsWith("Challenge complete") ? "bg-green-950/50 text-green-200" : "bg-amber-950/50 text-amber-200"}`}>{challengeStatus}</p>}</section>}
       <section className="flex flex-wrap items-end gap-6">
         <label className="flex flex-col gap-2 text-sm text-gray-300">

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
-export default function VerifyOTPPage() {
+function VerifyOTPContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -108,4 +108,8 @@ window.location.href = "/login";
       </div>
     </main>
   );
+}
+
+export default function VerifyOTPPage() {
+  return <Suspense fallback={<main className="min-h-screen bg-[#020617]" />}><VerifyOTPContent /></Suspense>;
 }
