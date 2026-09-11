@@ -1,15 +1,18 @@
 """Project, contribution, and shared resource models."""
 
-from datetime import datetime
+from datetime import datetime, timezone
+from uuid import UUID, uuid4
 
 from sqlalchemy import (
-    String,
-    Integer,
     DateTime,
     ForeignKey,
-    Text,
     JSON,
+    String,
+    Text,
+    UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -18,33 +21,45 @@ from app.core.database import Base
 class Project(Base):
     __tablename__ = "projects"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-
-    owner_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"),
+    project_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
     )
 
-    name: Mapped[str] = mapped_column(String(200))
+    owner_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.user_id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    name: Mapped[str] = mapped_column(
+        String(200),
+        nullable=False,
+    )
 
     description: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
 
-    status: Mapped[str] = mapped_column(
-        String(30),
-        default="active",
+    visibility: Mapped[str] = mapped_column(
+        String(20),
+        default="private",
+        nullable=False,
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
 
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
 
     owner = relationship("User")
@@ -52,35 +67,41 @@ class Project(Base):
     members = relationship(
         "ProjectMember",
         back_populates="project",
+        cascade="all, delete-orphan",
     )
 
     contributions = relationship(
         "Contribution",
         back_populates="project",
+        cascade="all, delete-orphan",
     )
 
 
 class ProjectMember(Base):
     __tablename__ = "project_members"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-
-    project_id: Mapped[int] = mapped_column(
-        ForeignKey("projects.id"),
+    project_member_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
     )
 
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"),
+    project_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("projects.project_id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.user_id", ondelete="CASCADE"),
+        nullable=False,
     )
 
     joined_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
-    )
-
-    project_role: Mapped[str | None] = mapped_column(
-        String(50),
-        nullable=True,
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
 
     project = relationship(
@@ -90,17 +111,34 @@ class ProjectMember(Base):
 
     user = relationship("User")
 
+    __table_args__ = (
+        UniqueConstraint(
+            "project_id",
+            "user_id",
+            name="uq_project_member",
+        ),
+    )
+
 
 class Contribution(Base):
     __tablename__ = "contributions"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-
-    project_id: Mapped[int] = mapped_column(
-        ForeignKey("projects.id"),
+    contribution_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
     )
 
-    title: Mapped[str] = mapped_column(String(200))
+    project_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("projects.project_id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    title: Mapped[str] = mapped_column(
+        String(200),
+        nullable=False,
+    )
 
     description: Mapped[str | None] = mapped_column(
         Text,
@@ -109,12 +147,14 @@ class Contribution(Base):
 
     contribution_type: Mapped[str] = mapped_column(
         String(50),
-        default="other",
+        default="documentation",
+        nullable=False,
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
 
     project = relationship(
@@ -125,25 +165,35 @@ class Contribution(Base):
     members = relationship(
         "ContributionMember",
         back_populates="contribution",
+        cascade="all, delete-orphan",
     )
 
 
 class ContributionMember(Base):
     __tablename__ = "contribution_members"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-
-    contribution_id: Mapped[int] = mapped_column(
-        ForeignKey("contributions.id"),
+    contribution_member_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
     )
 
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"),
+    contribution_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("contributions.contribution_id", ondelete="CASCADE"),
+        nullable=False,
     )
 
-    contribution_role: Mapped[str | None] = mapped_column(
-        String(50),
-        nullable=True,
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.user_id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    joined_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
 
     contribution = relationship(
@@ -153,29 +203,50 @@ class ContributionMember(Base):
 
     user = relationship("User")
 
+    __table_args__ = (
+        UniqueConstraint(
+            "contribution_id",
+            "user_id",
+            name="uq_contribution_member",
+        ),
+    )
+
 
 class SharedResource(Base):
     __tablename__ = "shared_resources"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-
-    share_id: Mapped[str] = mapped_column(
-        String(32),
-        unique=True,
-        index=True,
+    resource_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
     )
 
-    owner_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"),
+    owner_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.user_id", ondelete="CASCADE"),
+        nullable=False,
     )
 
-    kind: Mapped[str] = mapped_column(
+    project_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("projects.project_id", ondelete="CASCADE"),
+        nullable=True,
+    )
+
+    circuit_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("circuits.circuit_id", ondelete="CASCADE"),
+        nullable=True,
+    )
+
+    resource_type: Mapped[str] = mapped_column(
         String(30),
+        nullable=False,
     )
 
     title: Mapped[str] = mapped_column(
         String(200),
-        default="",
+        nullable=False,
     )
 
     description: Mapped[str | None] = mapped_column(
@@ -183,14 +254,19 @@ class SharedResource(Base):
         nullable=True,
     )
 
-    payload: Mapped[dict] = mapped_column(
-        JSON,
-        default=dict,
+    resource_data: Mapped[dict | None] = mapped_column(
+        JSONB,
+        nullable=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
 
     owner = relationship("User")
+
+    project = relationship("Project")
+
+    circuit = relationship("Circuit")

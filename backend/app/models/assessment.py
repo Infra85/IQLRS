@@ -1,14 +1,19 @@
 """Assessment and question models."""
 
-from datetime import datetime
+from datetime import datetime, timezone
+from uuid import UUID, uuid4
 
 from sqlalchemy import (
-    String,
-    Integer,
-    Text,
+    Boolean,
     DateTime,
+    Float,
     ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -17,10 +22,18 @@ from app.core.database import Base
 class Assessment(Base):
     __tablename__ = "assessments"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    assessment_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
+    )
 
-    module_id: Mapped[int] = mapped_column(
-        ForeignKey("learning_modules.id"),
+    module_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey(
+            "learning_modules.module_id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
     )
 
@@ -37,26 +50,55 @@ class Assessment(Base):
     assessment_type: Mapped[str] = mapped_column(
         String(50),
         default="quiz",
+        nullable=False,
+    )
+
+    max_score: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
+    passing_score: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
 
     questions = relationship(
         "Question",
         back_populates="assessment",
+        cascade="all, delete-orphan",
     )
 
     attempts = relationship(
         "AssessmentAttempt",
         back_populates="assessment",
+        cascade="all, delete-orphan",
     )
 
 
 class Question(Base):
     __tablename__ = "questions"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    question_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
+    )
 
-    assessment_id: Mapped[int] = mapped_column(
-        ForeignKey("assessments.id"),
+    assessment_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey(
+            "assessments.assessment_id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
     )
 
@@ -68,11 +110,19 @@ class Question(Base):
     question_type: Mapped[str] = mapped_column(
         String(50),
         default="multiple_choice",
+        nullable=False,
     )
 
     points: Mapped[int] = mapped_column(
         Integer,
         default=1,
+        nullable=False,
+    )
+
+    question_order: Mapped[int] = mapped_column(
+        Integer,
+        default=1,
+        nullable=False,
     )
 
     assessment = relationship(
@@ -83,6 +133,7 @@ class Question(Base):
     options = relationship(
         "QuestionOption",
         back_populates="question",
+        cascade="all, delete-orphan",
     )
 
     answers = relationship(
@@ -90,14 +141,30 @@ class Question(Base):
         back_populates="question",
     )
 
+    __table_args__ = (
+        UniqueConstraint(
+            "assessment_id",
+            "question_order",
+            name="uq_question_assessment_order",
+        ),
+    )
+
 
 class QuestionOption(Base):
     __tablename__ = "question_options"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    option_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
+    )
 
-    question_id: Mapped[int] = mapped_column(
-        ForeignKey("questions.id"),
+    question_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey(
+            "questions.question_id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
     )
 
@@ -107,7 +174,9 @@ class QuestionOption(Base):
     )
 
     is_correct: Mapped[bool] = mapped_column(
+        Boolean,
         default=False,
+        nullable=False,
     )
 
     question = relationship(
@@ -119,34 +188,62 @@ class QuestionOption(Base):
 class AssessmentAttempt(Base):
     __tablename__ = "assessment_attempts"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    attempt_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
+    )
 
-    assessment_id: Mapped[int] = mapped_column(
-        ForeignKey("assessments.id"),
+    assessment_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey(
+            "assessments.assessment_id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
     )
 
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"),
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey(
+            "users.user_id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
     )
 
     score: Mapped[int] = mapped_column(
         Integer,
         default=0,
+        nullable=False,
     )
 
-    completed: Mapped[bool] = mapped_column(
-        default=False,
+    max_score: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
+    percentage: Mapped[float] = mapped_column(
+        Float,
+        default=0,
+        nullable=False,
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(30),
+        default="in_progress",
+        nullable=False,
     )
 
     started_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
 
-    completed_at: Mapped[datetime | None] = mapped_column(
-        DateTime,
+    submitted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
         nullable=True,
     )
 
@@ -155,29 +252,50 @@ class AssessmentAttempt(Base):
         back_populates="attempts",
     )
 
+    user = relationship(
+        "User",
+    )
+
     answers = relationship(
         "QuestionAnswer",
         back_populates="attempt",
+        cascade="all, delete-orphan",
     )
 
 
 class QuestionAnswer(Base):
     __tablename__ = "question_answers"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    answer_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
+    )
 
-    attempt_id: Mapped[int] = mapped_column(
-        ForeignKey("assessment_attempts.id"),
+    attempt_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey(
+            "assessment_attempts.attempt_id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
     )
 
-    question_id: Mapped[int] = mapped_column(
-        ForeignKey("questions.id"),
+    question_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey(
+            "questions.question_id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
     )
 
-    selected_option_id: Mapped[int | None] = mapped_column(
-        ForeignKey("question_options.id"),
+    selected_option_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey(
+            "question_options.option_id",
+            ondelete="SET NULL",
+        ),
         nullable=True,
     )
 
@@ -187,7 +305,15 @@ class QuestionAnswer(Base):
     )
 
     is_correct: Mapped[bool] = mapped_column(
+        Boolean,
         default=False,
+        nullable=False,
+    )
+
+    points_earned: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
     )
 
     attempt = relationship(

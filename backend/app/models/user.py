@@ -1,6 +1,7 @@
-"""User, role, and gamification models."""
+"""User, role models."""
 
-from datetime import datetime
+from datetime import datetime, timezone
+from uuid import UUID, uuid4
 
 from sqlalchemy import (
     String,
@@ -8,8 +9,11 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     ForeignKey,
+    Text,
+    Index,
+    text,
 )
-
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -18,22 +22,50 @@ from app.core.database import Base
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
+        server_default=text("gen_random_uuid()"),
+    )
+
+    name: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+    )
 
     email: Mapped[str] = mapped_column(
         String(255),
         unique=True,
         index=True,
+        nullable=False,
     )
 
-    hashed_password: Mapped[str] = mapped_column(
-        String(255)
+    password_hash: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
     )
 
-    name: Mapped[str] = mapped_column(
-        String(120)
+    avatar_url: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
     )
 
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    # Authentication / email verification
+    # Kept here because the current auth system uses OTP verification.
     email_verified: Mapped[bool] = mapped_column(
         Boolean,
         default=False,
@@ -46,18 +78,14 @@ class User(Base):
     )
 
     otp_expires_at: Mapped[datetime | None] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         nullable=True,
-    )
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
     )
 
     roles = relationship(
         "UserRole",
         back_populates="user",
+        cascade="all, delete-orphan",
     )
 
     module_progress = relationship(
@@ -74,6 +102,7 @@ class User(Base):
         "UserGamification",
         back_populates="user",
         uselist=False,
+        cascade="all, delete-orphan",
     )
 
     badges = relationship(
@@ -85,9 +114,11 @@ class User(Base):
 class Role(Base):
     __tablename__ = "roles"
 
-    id: Mapped[int] = mapped_column(
-        Integer,
+    role_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
         primary_key=True,
+        default=uuid4,
+        server_default=text("gen_random_uuid()"),
     )
 
     name: Mapped[str] = mapped_column(
@@ -104,30 +135,42 @@ class Role(Base):
     users = relationship(
         "UserRole",
         back_populates="role",
+        cascade="all, delete-orphan",
     )
 
 
 class UserRole(Base):
     __tablename__ = "user_roles"
 
-    id: Mapped[int] = mapped_column(
-        Integer,
+    user_role_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
         primary_key=True,
+        default=uuid4,
+        server_default=text("gen_random_uuid()"),
     )
 
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"),
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.user_id", ondelete="CASCADE"),
         nullable=False,
     )
 
-    role_id: Mapped[int] = mapped_column(
-        ForeignKey("roles.id"),
+    role_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("roles.role_id", ondelete="CASCADE"),
         nullable=False,
     )
 
     is_primary: Mapped[bool] = mapped_column(
         Boolean,
         default=False,
+        nullable=False,
+    )
+
+    assigned_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
 
     user = relationship(
@@ -140,37 +183,13 @@ class UserRole(Base):
         back_populates="users",
     )
 
-
-class UserGamification(Base):
-    __tablename__ = "user_gamification"
-
-    id: Mapped[int] = mapped_column(
-        Integer,
-        primary_key=True,
+    __table_args__ = (
+        Index(
+            "uq_user_one_primary_role",
+            "user_id",
+            unique=True,
+            postgresql_where=text("is_primary = true"),
+        ),
     )
 
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"),
-        unique=True,
-        nullable=False,
-    )
 
-    xp: Mapped[int] = mapped_column(
-        Integer,
-        default=0,
-    )
-
-    level: Mapped[int] = mapped_column(
-        Integer,
-        default=1,
-    )
-
-    streak_days: Mapped[int] = mapped_column(
-        Integer,
-        default=0,
-    )
-
-    user = relationship(
-        "User",
-        back_populates="gamification",
-    )

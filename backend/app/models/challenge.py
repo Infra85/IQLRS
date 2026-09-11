@@ -1,15 +1,18 @@
 """Coding challenge and code submission models."""
 
-from datetime import datetime
+from datetime import datetime, timezone
+from uuid import UUID, uuid4
 
 from sqlalchemy import (
-    String,
-    Integer,
+    Boolean,
     DateTime,
     ForeignKey,
+    Integer,
+    String,
     Text,
-    JSON,
 )
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -18,19 +21,39 @@ from app.core.database import Base
 class CodingChallenge(Base):
     __tablename__ = "coding_challenges"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    challenge_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
+    )
 
-    module_id: Mapped[int | None] = mapped_column(
-        ForeignKey("learning_modules.id"),
+    module_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey(
+            "learning_modules.module_id",
+            ondelete="CASCADE",
+        ),
+        nullable=False,
+    )
+
+    title: Mapped[str] = mapped_column(
+        String(200),
+        nullable=False,
+    )
+
+    description: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
+    instructions: Mapped[str | None] = mapped_column(
+        Text,
         nullable=True,
     )
 
-    title: Mapped[str] = mapped_column(String(200))
-    description: Mapped[str] = mapped_column(Text)
-
-    difficulty: Mapped[str] = mapped_column(
-        String(20),
-        default="beginner",
+    framework: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
     )
 
     starter_code: Mapped[str | None] = mapped_column(
@@ -39,18 +62,31 @@ class CodingChallenge(Base):
     )
 
     expected_output: Mapped[dict | None] = mapped_column(
-        JSON,
+        JSONB,
         nullable=True,
     )
 
-    test_cases: Mapped[dict | None] = mapped_column(
-        JSON,
+    test_code: Mapped[str | None] = mapped_column(
+        Text,
         nullable=True,
+    )
+
+    difficulty: Mapped[str] = mapped_column(
+        String(20),
+        default="beginner",
+        nullable=False,
+    )
+
+    max_score: Mapped[int] = mapped_column(
+        Integer,
+        default=100,
+        nullable=False,
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
 
     module = relationship(
@@ -61,36 +97,44 @@ class CodingChallenge(Base):
     submissions = relationship(
         "CodeSubmission",
         back_populates="challenge",
+        cascade="all, delete-orphan",
     )
 
 
 class CodeSubmission(Base):
     __tablename__ = "code_submissions"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-
-    challenge_id: Mapped[int] = mapped_column(
-        ForeignKey("coding_challenges.id"),
+    submission_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
     )
 
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"),
+    challenge_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey(
+            "coding_challenges.challenge_id",
+            ondelete="CASCADE",
+        ),
+        nullable=False,
     )
 
-    code: Mapped[str] = mapped_column(Text)
-
-    language: Mapped[str] = mapped_column(
-        String(30),
-        default="python",
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey(
+            "users.user_id",
+            ondelete="CASCADE",
+        ),
+        nullable=False,
     )
 
-    status: Mapped[str] = mapped_column(
-        String(30),
-        default="pending",
+    code: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
     )
 
-    score: Mapped[int | None] = mapped_column(
-        Integer,
+    framework: Mapped[str | None] = mapped_column(
+        String(50),
         nullable=True,
     )
 
@@ -104,9 +148,26 @@ class CodeSubmission(Base):
         nullable=True,
     )
 
+    score: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
+    passed: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+
+    execution_time_ms: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
     submitted_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
 
     challenge = relationship(
@@ -114,4 +175,6 @@ class CodeSubmission(Base):
         back_populates="submissions",
     )
 
-    user = relationship("User")
+    user = relationship(
+        "User",
+    )

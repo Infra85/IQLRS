@@ -4,7 +4,6 @@ from app.models.user import (
     User,
     Role,
     UserRole,
-    UserGamification,
 )
 
 from app.models.learning import (
@@ -50,6 +49,7 @@ from app.models.challenge import (
 )
 
 from app.models.gamification import (
+    UserGamification,
     Badge,
     UserBadge,
 )
@@ -67,7 +67,6 @@ __all__ = [
     "User",
     "Role",
     "UserRole",
-    "UserGamification",
 
     "Course",
     "LearningModule",
@@ -97,6 +96,7 @@ __all__ = [
     "CodingChallenge",
     "CodeSubmission",
 
+    "UserGamification",
     "Badge",
     "UserBadge",
 

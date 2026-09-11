@@ -1,15 +1,11 @@
 """AI tutor and conversation models."""
 
-from datetime import datetime
+from datetime import datetime, timezone
+from uuid import UUID, uuid4
 
-from sqlalchemy import (
-    String,
-    Integer,
-    Text,
-    DateTime,
-    ForeignKey,
-    JSON,
-)
+from sqlalchemy import DateTime, ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -18,16 +14,22 @@ from app.core.database import Base
 class AIConversation(Base):
     __tablename__ = "ai_conversations"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    conversation_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
+    )
 
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"),
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.user_id", ondelete="CASCADE"),
         nullable=False,
     )
 
-    circuit_id: Mapped[int | None] = mapped_column(
-        ForeignKey("circuits.id"),
-        nullable=True
+    circuit_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("circuits.circuit_id", ondelete="SET NULL"),
+        nullable=True,
     )
 
     title: Mapped[str | None] = mapped_column(
@@ -35,50 +37,64 @@ class AIConversation(Base):
         nullable=True,
     )
 
-    context: Mapped[dict | None] = mapped_column(
-        JSON,
-        nullable=True,
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
 
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
 
     messages = relationship(
         "AIMessage",
         back_populates="conversation",
+        cascade="all, delete-orphan",
     )
+
+    user = relationship("User")
+
+    circuit = relationship("Circuit")
 
 
 class AIMessage(Base):
     __tablename__ = "ai_messages"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    message_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
+    )
 
-    conversation_id: Mapped[int] = mapped_column(
-        ForeignKey("ai_conversations.id"),
+    conversation_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("ai_conversations.conversation_id", ondelete="CASCADE"),
         nullable=False,
     )
 
-    role: Mapped[str] = mapped_column(
+    sender_type: Mapped[str] = mapped_column(
         String(30),
         nullable=False,
     )
 
-    content: Mapped[str] = mapped_column(
+    message: Mapped[str] = mapped_column(
         Text,
         nullable=False,
     )
 
-    message_metadata: Mapped[dict | None] = mapped_column(
-        JSON,
+    context_data: Mapped[dict | None] = mapped_column(
+        JSONB,
         nullable=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
 
     conversation = relationship(
