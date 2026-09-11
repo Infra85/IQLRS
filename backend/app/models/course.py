@@ -1,12 +1,10 @@
 """Course enrollment and assignment models."""
 
 from datetime import datetime
+from uuid import UUID, uuid4
 
-from sqlalchemy import (
-    Integer,
-    DateTime,
-    ForeignKey,
-)
+from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -15,24 +13,34 @@ from app.core.database import Base
 class CourseEnrollment(Base):
     __tablename__ = "course_enrollments"
 
-    id: Mapped[int] = mapped_column(
-        Integer,
+    enrollment_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
         primary_key=True,
+        default=uuid4,
     )
 
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"),
+    course_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("courses.course_id"),
         nullable=False,
     )
 
-    course_id: Mapped[int] = mapped_column(
-        ForeignKey("courses.id"),
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.user_id"),
+        nullable=False,
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(30),
+        default="active",
         nullable=False,
     )
 
     enrolled_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         default=datetime.utcnow,
+        nullable=False,
     )
 
     user = relationship(
@@ -49,32 +57,60 @@ class CourseEnrollment(Base):
 class CourseAssignment(Base):
     __tablename__ = "course_assignments"
 
-    id: Mapped[int] = mapped_column(
-        Integer,
+    assignment_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
         primary_key=True,
+        default=uuid4,
     )
 
-    course_id: Mapped[int] = mapped_column(
-        ForeignKey("courses.id"),
+    course_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("courses.course_id"),
         nullable=False,
     )
 
-    assessment_id: Mapped[int | None] = mapped_column(
-        ForeignKey("assessments.id"),
+    module_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("learning_modules.module_id"),
         nullable=True,
     )
 
-    challenge_id: Mapped[int | None] = mapped_column(
-        ForeignKey("coding_challenges.id"),
+    assessment_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("assessments.assessment_id"),
         nullable=True,
     )
 
-    assigned_by: Mapped[int] = mapped_column(
-        ForeignKey("users.id"),
+    assigned_by: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.user_id"),
         nullable=False,
     )
 
-    assigned_at: Mapped[datetime] = mapped_column(
-        DateTime,
+    due_date: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
         default=datetime.utcnow,
+        nullable=False,
+    )
+
+    course = relationship(
+        "Course",
+    )
+
+    module = relationship(
+        "LearningModule",
+    )
+
+    assessment = relationship(
+        "Assessment",
+    )
+
+    assigned_by_user = relationship(
+        "User",
+        foreign_keys=[assigned_by],
     )
