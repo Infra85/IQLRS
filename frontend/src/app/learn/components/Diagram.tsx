@@ -1,4 +1,16 @@
-export default function Diagram({ label, index }: { label: string; index: number }) {
-  const color = ["#60a5fa", "#a78bfa", "#34d399"][index % 3];
-  return <figure className="mt-4 overflow-hidden rounded-lg border border-gray-800 bg-gray-950 p-4"><svg viewBox="0 0 640 130" role="img" aria-label={label} className="h-auto w-full"><path d="M45 65H595" stroke="#475569" strokeWidth="3" />{[110, 300, 490].map((x, step) => <g key={x}><circle cx={x} cy="65" r="27" fill="#111827" stroke={color} strokeWidth="3" /><text x={x} y="71" textAnchor="middle" fill="white" fontSize="17" fontWeight="600">{step + 1}</text>{step < 2 && <path d={`M${x + 30} 65h125`} stroke={color} strokeWidth="3" markerEnd="url(#arrow)" />}</g>)}<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill={color} /></marker></defs></svg><figcaption className="mt-2 text-center text-sm text-gray-300">{label}</figcaption></figure>;
+export default function Diagram({
+  label,
+  index,
+}: {
+  label: string;
+  index: number;
+}) {
+  return (
+    <figure className="concept-diagram">
+      <pre>{label}</pre>
+      <figcaption className="technical">
+        Concept notation / {String(index + 1).padStart(2, "0")}
+      </figcaption>
+    </figure>
+  );
 }

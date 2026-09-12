@@ -38,3 +38,6 @@ htmlcov/
 
 # Docker
 *.log
+
+# Generated neural narration cache
+backend/.cache/

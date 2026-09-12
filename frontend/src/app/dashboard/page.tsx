@@ -1,7 +1,15 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  PageHeader,
+  LoadingState,
+  Status,
+  EmptyState,
+} from "@/components/ui/page";
+import { Card, CardContent } from "@/components/ui/card";
 import { API_URL } from "@/lib/api";
 
 type Course = {
@@ -26,11 +34,11 @@ type DashboardData = {
 };
 
 export default function DashboardPage() {
-    const handleLogout = () => {
+  const handleLogout = () => {
     localStorage.removeItem("access_token");
     window.location.href = "/login";
   };
-  
+
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,14 +56,11 @@ export default function DashboardPage() {
         }
 
         // Fetch dashboard for the currently logged-in user
-        const response = await fetch(
-          `${API_URL}/api/dashboard/me`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await fetch(`${API_URL}/api/dashboard/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         // Token is invalid or expired
         if (response.status === 401) {
@@ -71,8 +76,6 @@ export default function DashboardPage() {
 
         const data: DashboardData = await response.json();
 
-        console.log("DASHBOARD API DATA:", data);
-
         setDashboard(data);
       } catch (err) {
         console.error(err);
@@ -85,131 +88,122 @@ export default function DashboardPage() {
     fetchDashboard();
   }, []);
 
-  // Loading state
-  if (loading) {
+  if (loading)
     return (
-      <main className="min-h-screen bg-gray-950 p-8 text-white">
-        <div className="mx-auto max-w-6xl">
-          <p className="text-gray-400">Loading dashboard...</p>
-        </div>
+      <main className="page">
+        <LoadingState label="Loading your learning progress…" />
       </main>
     );
-  }
-
-  // Error state
-  if (error || !dashboard) {
+  if (error || !dashboard)
     return (
-      <main className="min-h-screen bg-gray-950 p-8 text-white">
-        <div className="mx-auto max-w-6xl">
-          <p className="text-red-400">
-            {error || "Unable to load dashboard."}
-          </p>
-        </div>
+      <main className="page">
+        <PageHeader
+          eyebrow="ACCOUNT / PROGRESS"
+          title="Your learning dashboard."
+        />
+        <Status kind="error">{error || "Unable to load dashboard."}</Status>
+        <Button
+          className="mt-5"
+          variant="secondary"
+          onClick={() => window.location.reload()}
+        >
+          Try again
+        </Button>
       </main>
     );
-  }
-
   const { user, courses, statistics } = dashboard;
-
+  const stats = [
+    { label: "Quiz score", value: `${statistics.quiz_score}%` },
+    {
+      label: "Challenges",
+      value: `${statistics.challenges_completed} / ${statistics.challenges_total}`,
+    },
+    { label: "Learning streak", value: `${statistics.streak} days` },
+    { label: "Experience points", value: statistics.xp.toLocaleString() },
+  ];
   return (
-    <main className="min-h-screen bg-gray-950 p-8 text-white">
-      <div className="mx-auto max-w-6xl">
-        {/* Dashboard Header */}
-        <h1 className="text-3xl font-bold">My Dashboard</h1>
-        <button
-  onClick={handleLogout}
-  className="mt-4 rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700"
->
-  Logout
-</button>
-
-        <p className="mt-2 text-gray-400">
-          Welcome, {user.name}. Track your learning progress, scores, and
-          achievements.
-        </p>
-
-        {/* Course Progress */}
-        <section className="mt-8">
-          <h2 className="text-xl font-semibold">Course Progress</h2>
-
+    <main className="page">
+      <PageHeader
+        eyebrow="ACCOUNT / LEARNING RECORD"
+        title={`Welcome back, ${user.name}.`}
+        description="Every concept understood. Every circuit explored. Your learning, in perspective."
+        action={
+          <Button variant="secondary" onClick={handleLogout}>
+            Sign out
+          </Button>
+        }
+      />
+      <section className="stat-grid" aria-label="Learning statistics">
+        {stats.map((stat) => (
+          <div className="stat" key={stat.label}>
+            <p className="technical">{stat.label}</p>
+            <p className="stat-value">{stat.value}</p>
+          </div>
+        ))}
+      </section>
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <section>
+          <div className="flex items-center justify-between mb-5 gap-4">
+            <h2 className="section-title">Your course progress</h2>
+            <Link
+              className="text-sm text-slate-300 hover:text-white"
+              href="/learn"
+            >
+              View curriculum ↗
+            </Link>
+          </div>
           {courses.length === 0 ? (
-            <div className="mt-4 rounded-xl border border-gray-800 bg-gray-900 p-5">
-              <p className="text-gray-400">
-                You are not enrolled in any courses yet.
-              </p>
-            </div>
+            <EmptyState
+              title="Your learning path starts here."
+              description="Explore the curriculum and begin with the foundations of quantum states."
+              href="/learn"
+            />
           ) : (
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div className="space-y-4">
               {courses.map((course) => (
-                <div
-                  key={course.name}
-                  className="rounded-xl border border-gray-800 bg-gray-900 p-5"
-                >
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium">{course.name}</h3>
-
-                    <span className="text-sm text-gray-400">
-                      {course.progress}%
-                    </span>
-                  </div>
-
-                  <div className="mt-3 h-3 w-full rounded-full bg-gray-800">
-                    <div
-                      className="h-3 rounded-full bg-blue-500"
-                      style={{ width: `${course.progress}%` }}
+                <Card key={course.name}>
+                  <CardContent>
+                    <div className="flex justify-between gap-5 mb-4">
+                      <h3>{course.name}</h3>
+                      <span className="font-mono text-sm text-quantum-300">
+                        {course.progress}%
+                      </span>
+                    </div>
+                    <progress
+                      className="progress-track"
+                      value={course.progress}
+                      max={100}
+                      aria-label={`${course.name} progress`}
                     />
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
         </section>
-
-        {/* Learning Statistics */}
-        <section className="mt-10">
-          <h2 className="text-xl font-semibold">Learning Statistics</h2>
-
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {/* Quiz Score */}
-            <div className="rounded-xl border border-gray-800 bg-gray-900 p-5">
-              <p className="text-sm text-gray-400">Quiz Score</p>
-
-              <p className="mt-2 text-3xl font-bold">
-                {statistics.quiz_score}%
+        <aside className="space-y-6">
+          <Card>
+            <CardContent>
+              <p className="technical mb-4">Your account</p>
+              <p className="font-medium">{user.name}</p>
+              <p className="mt-2 text-sm text-slate-400 break-all">
+                {user.email}
               </p>
-            </div>
-
-            {/* Challenges */}
-            <div className="rounded-xl border border-gray-800 bg-gray-900 p-5">
-              <p className="text-sm text-gray-400">Challenges</p>
-
-              <p className="mt-2 text-3xl font-bold">
-                {statistics.challenges_completed}/
-                {statistics.challenges_total}
-              </p>
-            </div>
-
-            {/* Learning Streak */}
-            <div className="rounded-xl border border-gray-800 bg-gray-900 p-5">
-              <p className="text-sm text-gray-400">Learning Streak</p>
-
-              <p className="mt-2 text-3xl font-bold">
-                {statistics.streak} days
-              </p>
-            </div>
-
-            {/* XP */}
-            <div className="rounded-xl border border-gray-800 bg-gray-900 p-5">
-              <p className="text-sm text-gray-400">XP</p>
-
-              <p className="mt-2 text-3xl font-bold">
-                {statistics.xp}
-              </p>
-            </div>
+            </CardContent>
+          </Card>
+          <div className="border-t pt-6">
+            <p className="technical mb-4">Theory → practice</p>
+            <h2 className="section-title mb-3">Make your next discovery.</h2>
+            <p className="text-sm text-slate-400 leading-7 mb-5">
+              Turn what you’ve learned into a circuit. Start with a qubit and
+              see where it takes you.
+            </p>
+            <Button asChild variant="secondary">
+              <Link href="/builder">Open circuit builder ↗</Link>
+            </Button>
           </div>
-        </section>
+        </aside>
       </div>
     </main>
   );
 }
-

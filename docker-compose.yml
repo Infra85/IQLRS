@@ -20,11 +20,21 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/quantumlearn
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - TTS_PROVIDER=${TTS_PROVIDER:-openai}
+      - TTS_MODEL=${TTS_MODEL:-gpt-4o-mini-tts}
+      - TTS_VOICE=${TTS_VOICE:-marin}
+      - TTS_CACHE_PATH=/app/.cache/narration.sqlite3
+      - TTS_CACHE_MAX_BYTES=${TTS_CACHE_MAX_BYTES:-134217728}
+      - TTS_CACHE_TTL_SECONDS=${TTS_CACHE_TTL_SECONDS:-604800}
+      - TTS_DAILY_CHAR_LIMIT=${TTS_DAILY_CHAR_LIMIT:-250000}
+      - TTS_REQUESTS_PER_MINUTE=${TTS_REQUESTS_PER_MINUTE:-40}
+      - TTS_MAX_CONCURRENT=${TTS_MAX_CONCURRENT:-2}
     depends_on:
       - db
     volumes:
       - ./backend/app:/app/app
+      - narration_cache:/app/.cache
 
   db:
     image: postgres:16-alpine
@@ -39,3 +49,4 @@ services:
 
 volumes:
   pgdata:
+  narration_cache:

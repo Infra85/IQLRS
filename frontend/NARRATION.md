@@ -1,0 +1,17 @@
+# Read aloud
+
+All eight lessons use their existing content catalogue for narration. Reusable Listen controls also cover the landing page's educational explanations, introductions, quizzes and revealed feedback, State Explorer, circuit instructions and challenges, simulation interpretation, and Code Lab explanations. Navigation and unrevealed answers are excluded.
+
+Set `OPENAI_API_KEY` in the backend environment, using `.env.example` for the remaining settings. Restart the backend. The default is OpenAI `gpt-4o-mini-tts` with `marin`, natural instructor delivery instructions, and an explicit AI voice disclosure. Secrets stay on the backend. No browser speech-synthesis fallback is used. Without credentials, lessons remain usable and the player offers retry.
+
+Provider selection lives in `backend/app/services/speech/provider.py`; another provider implements its small protocol and factory entry. Model, voice, delivery instructions and text determine cache identity. See the [OpenAI speech guide](https://developers.openai.com/api/docs/guides/text-to-speech).
+
+Text normalization handles lists, headings, Greek symbols, quantum states, tensor products and common technical names without changing displayed content. Fenced code is identified rather than read character by character. Sentence-based chunks are generated lazily (900 characters; server limit 1600). Short MP3 chunks enable seeking and prompt cancellation; playback pauses briefly at uncached chunk boundaries rather than downloading a whole lesson first.
+
+One shared controller owns playback. Pause/resume, stop, replay, segment navigation, seeking, speed and volume are keyboard accessible. The current section is highlighted; scrolling is explicit. Navigation, content changes and unmounts cancel generation and release object URLs. Ordinary rerenders preserve playback.
+
+The browser caches up to 24 MiB for 30 minutes. SQLite provides persistent bounded audio caching and an atomic daily character budget across workers. Request rate, concurrent generation and pending work are bounded per worker; duplicate generation is coalesced within a worker. Multiple workers can still generate the same first uncached chunk concurrently. Configure deployment-wide limits at the gateway when scaling. Failed or cancelled generation can consume reserved character budget conservatively. Keep the configured cache volume writable and persistent.
+
+Run `npm run typecheck`, `npm run lint`, `npm test`, and `npm run build` in `frontend`; run `backend/.venv/bin/python -m pytest backend/tests -q` from the repository root. Tests cover normalization, long lessons, controller transitions, cancellation, cache reuse, API validation, safe errors and budgets. A real provider key is required to validate actual neural voice quality; synthetic audio fixtures only validate player behavior.
+
+Continuation verification: 22 backend tests and 10 frontend unit cases passed, along with typecheck, lint and production build. Headless Chrome passed 72 route/viewport combinations without document overflow or runtime exceptions. All eight lessons were checked with an audio fixture at 1440, 768, 375 and 320 pixels for explicit playback, pause/resume, replay/cache reuse, speed, highlighting, segment navigation and stop. Additional browser checks passed failure/retry, navigation cleanup, mouse and touch gate movement, keyboard gate movement, and simulation execution indicators. Actual provider audio remains unverified without an API key.
