@@ -21,6 +21,8 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/quantumlearn
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - SMTP_EMAIL=${SMTP_EMAIL:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
       - TTS_PROVIDER=${TTS_PROVIDER:-openai}
       - TTS_MODEL=${TTS_MODEL:-gpt-4o-mini-tts}
       - TTS_VOICE=${TTS_VOICE:-marin}

@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from datetime import datetime, timedelta
-import random
+import secrets
 
 from app.core.database import get_db
 from app.core.security import hash_password, verify_password, create_access_token
-from app.core.email import send_otp_email
+from app.core.email import EmailDeliveryError, send_otp_email
 from app.models.user import User
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
 
@@ -18,18 +19,23 @@ def register(
     payload: RegisterRequest,
     db: Session = Depends(get_db),
 ):
-    existing_user = db.query(User).filter(User.email == payload.email).first()
+    existing_user = db.query(User).filter(User.email == payload.email).with_for_update().first()
 
-    if existing_user:
+    if existing_user and (
+        existing_user.email_verified
+        or not verify_password(payload.password, existing_user.hashed_password)
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
         )
 
-    otp = str(random.randint(100000, 999999))
+    otp = str(secrets.randbelow(900000) + 100000)
     otp_expires_at = datetime.utcnow() + timedelta(minutes=10)
 
-    user = User(
+    # Retry legacy unverified registrations only with the original password.
+    # Do not replace account details or invalidate the old OTP on delivery failure.
+    user = existing_user or User(
         email=payload.email,
         hashed_password=hash_password(payload.password),
         name=payload.name,
@@ -38,15 +44,28 @@ def register(
         otp_expires_at=otp_expires_at,
     )
 
+    user.otp_code = otp
+    user.otp_expires_at = otp_expires_at
     db.add(user)
-    db.commit()
-    db.refresh(user)
-
-    send_otp_email(user.email, otp)
+    try:
+        # Enforce uniqueness before sending, but persist only after SMTP accepts.
+        db.flush()
+        user_id = user.id
+        send_otp_email(user.email, otp)
+        db.commit()
+    except EmailDeliveryError as exc:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from None
+    except IntegrityError:
+        db.rollback()
+        # A concurrent registration can win the unique email constraint.
+        if db.query(User).filter(User.email == payload.email).first():
+            raise HTTPException(status_code=400, detail="Email already registered") from None
+        raise
 
     return {
         "message": "User registered successfully",
-        "user_id": user.id,
+        "user_id": user_id,
     }
 
 
