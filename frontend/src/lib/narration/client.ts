@@ -57,7 +57,7 @@ export async function loadNarrationAudio(
     return blob;
   } catch (error) {
     if (signal.aborted) throw error;
-    // Never display upstream response bodies. Let retry re-check provider configuration.
+  
     config = undefined;
     throw new Error(
       error instanceof Error && error.message === "busy"

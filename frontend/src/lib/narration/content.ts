@@ -1,7 +1,7 @@
 import type { Module } from "../../app/learn/modules";
 import type { NarrationSegment } from "./text";
 
-/** Uses the same catalogue values that render each lesson; no second transcript. */
+
 export function moduleNarration(lesson: Module): NarrationSegment[] {
   return [
     {

@@ -17,7 +17,7 @@ export type BrowserVoice = {
   configure?: (speed: number, volume: number) => void;
 };
 
-/** A fallback transport owned exclusively by the shared narration controller. */
+
 export function createBrowserVoice(): BrowserVoice | null {
   if (
     typeof window === "undefined" ||
@@ -26,7 +26,7 @@ export function createBrowserVoice(): BrowserVoice | null {
   )
     return null;
   const synth = window.speechSynthesis;
-  // Retain a strong reference for the entire utterance lifecycle.
+  
   let utterance: SpeechSynthesisUtterance | null = null;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let paused = false;
@@ -68,8 +68,7 @@ export function createBrowserVoice(): BrowserVoice | null {
         utterance = current;
         started = false;
         current.lang = "en-US";
-        // Voices can arrive asynchronously; re-query for each utterance and allow
-        // the browser to resolve its default English voice if none are ready yet.
+
         current.voice =
           synth.getVoices().find((voice) => /^en\b/i.test(voice.lang)) || null;
         current.rate = rate;

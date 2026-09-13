@@ -35,7 +35,7 @@ const initial: PlaybackState = {
   error: null,
 };
 
-/** One audio element, one request, and one immutable playback snapshot for the whole app. */
+
 export class NarrationController {
   private state: PlaybackState = initial;
   private listeners = new Set<() => void>();
@@ -184,7 +184,7 @@ export class NarrationController {
             },
           },
         );
-      // A pause during network loading must not start fallback speech.
+
       if (this.wantsPlayback) speak();
       else {
         this.browser = null;

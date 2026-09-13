@@ -9,7 +9,7 @@ const stateExplanation =
 const circuitExplanation =
   "Quantum gates change amplitudes. Follow a readable circuit, then run your own version in the simulator.";
 
-/** A conceptual state-field illustration, not a literal quantum simulation. */
+
 export function QuantumLandingScene() {
   const sceneRef = useRef<HTMLDivElement>(null);
 

@@ -21,9 +21,7 @@ def get_dashboard(
     db: Session = Depends(get_db),
 ):
     user_id = current_user.id
-    # -------------------------
-    # 1. Get user
-    # -------------------------
+
     user = db.query(User).filter(User.id == user_id).first()
 
     if not user:
@@ -31,9 +29,7 @@ def get_dashboard(
             "error": "User not found"
         }
 
-    # -------------------------
-    # 2. Course progress
-    # -------------------------
+
     courses_data = []
 
     enrollments = (
@@ -86,9 +82,7 @@ def get_dashboard(
             "progress": progress_percentage
         })
 
-    # -------------------------
-    # 3. Quiz score
-    # -------------------------
+
     attempts = (
         db.query(AssessmentAttempt)
         .filter(AssessmentAttempt.user_id == user_id)
@@ -110,9 +104,7 @@ def get_dashboard(
     else:
         quiz_score = 0
 
-    # -------------------------
-    # 4. Coding challenges
-    # -------------------------
+
     total_challenges = db.query(CodingChallenge).count()
 
     completed_challenges = (
@@ -124,9 +116,7 @@ def get_dashboard(
         .count()
     )
 
-    # -------------------------
-    # 5. Gamification
-    # -------------------------
+
     gamification = (
         db.query(UserGamification)
         .filter(UserGamification.user_id == user_id)
@@ -140,9 +130,7 @@ def get_dashboard(
         xp = 0
         streak = 0
 
-    # -------------------------
-    # 6. Return dashboard data
-    # -------------------------
+
     return {
         "user": {
             "id": user.id,

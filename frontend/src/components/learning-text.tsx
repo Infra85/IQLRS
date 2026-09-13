@@ -1,4 +1,4 @@
-/** Render the catalogue's emphasis without introducing an HTML/markdown parser. */
+
 export function LearningText({ text }: { text: string }) {
   return (
     <>

@@ -50,7 +50,7 @@ function stateName(text: string): string {
     .replace(/'/g, " prime ");
 }
 
-/** Work on source content, never scrape navigation/HTML or change displayed text. */
+
 export function normalizeSpeech(input: string): string {
   return (
     input
@@ -78,7 +78,7 @@ export function normalizeSpeech(input: string): string {
             .map((c) => subscripts[c])
             .join(" ")} `,
       )
-      // Inner products must be handled before individual bras and kets.
+
       .replace(
         /⟨([^⟨⟩|]+)\|([^⟨⟩|]+)⟩/g,
         (_, bra, ket) =>
@@ -139,7 +139,7 @@ export function normalizeSpeech(input: string): string {
   );
 }
 
-/** Prefer paragraphs/sentences. Fall back to whitespace only for oversized sentences. */
+
 export function chunkSpeech(text: string, limit = 900): string[] {
   if (limit < 64 || limit > 1600)
     throw new Error("Invalid narration chunk limit");

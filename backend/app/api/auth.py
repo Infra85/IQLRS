@@ -33,8 +33,7 @@ def register(
     otp = str(secrets.randbelow(900000) + 100000)
     otp_expires_at = datetime.utcnow() + timedelta(minutes=10)
 
-    # Retry legacy unverified registrations only with the original password.
-    # Do not replace account details or invalidate the old OTP on delivery failure.
+ 
     user = existing_user or User(
         email=payload.email,
         hashed_password=hash_password(payload.password),
@@ -48,7 +47,7 @@ def register(
     user.otp_expires_at = otp_expires_at
     db.add(user)
     try:
-        # Enforce uniqueness before sending, but persist only after SMTP accepts.
+       
         db.flush()
         user_id = user.id
         send_otp_email(user.email, otp)

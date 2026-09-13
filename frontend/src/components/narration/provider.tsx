@@ -110,7 +110,7 @@ export function NarratorSetting() {
     </div>
   );
 }
-/** Remove narration-only layout and copy along with its controls. */
+
 export function NarratorOnly({ children }: { children: React.ReactNode }) {
   const { state } = useNarration();
   return state.enabled ? <>{children}</> : null;
