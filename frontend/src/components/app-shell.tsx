@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { Accessibility, Menu, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { BrandMark } from "./brand-mark";
 const navigation = [
@@ -76,6 +76,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </button>
             </>
           )}
+          <Link
+            href="/accessibility"
+            className="ui-button button-ghost"
+            aria-label="Accessibility settings"
+          >
+            <Accessibility size={20} aria-hidden="true" />
+          </Link>
         </div>
         {!isAuth && (
           <nav

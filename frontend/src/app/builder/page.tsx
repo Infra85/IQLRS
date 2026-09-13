@@ -1,4 +1,4 @@
-import { ListenButton } from "@/components/narration/provider";
+import { ListenButton, NarratorOnly } from "@/components/narration/provider";
 import { Suspense } from "react";
 import CircuitBuilder from "@/components/circuit-builder/CircuitBuilder";
 import { GuestPrompt } from "@/components/guest-prompt";
@@ -16,19 +16,21 @@ export default function BuilderPage() {
         description={introduction}
         action={<Badge>QISKIT / SIMULATOR</Badge>}
       />
-      <div className="mb-6">
-        <ListenButton
-          owner="page-introduction"
-          segments={[
-            {
-              id: "introduction",
-              title: "Build a quantum circuit.",
-              text: introduction,
-            },
-          ]}
-          label="Listen to introduction"
-        />
-      </div>
+      <NarratorOnly>
+        <div className="mb-6">
+          <ListenButton
+            owner="page-introduction"
+            segments={[
+              {
+                id: "introduction",
+                title: "Build a quantum circuit.",
+                text: introduction,
+              },
+            ]}
+            label="Listen to introduction"
+          />
+        </div>
+      </NarratorOnly>
       <Suspense
         fallback={<LoadingState label="Preparing circuit instrument…" />}
       >

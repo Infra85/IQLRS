@@ -1,5 +1,5 @@
 "use client";
-import { ListenButton } from "@/components/narration/provider";
+import { ListenButton, NarratorOnly } from "@/components/narration/provider";
 import { useState } from "react";
 import { PageHeader, Status } from "@/components/ui/page";
 import { Button } from "@/components/ui/button";
@@ -43,19 +43,21 @@ export default function EditorPage() {
         title="Express it in code."
         description={introduction}
       />
-      <div className="mb-6">
-        <ListenButton
-          owner="page-introduction"
-          segments={[
-            {
-              id: "introduction",
-              title: "Express it in code.",
-              text: introduction,
-            },
-          ]}
-          label="Listen to introduction"
-        />
-      </div>
+      <NarratorOnly>
+        <div className="mb-6">
+          <ListenButton
+            owner="page-introduction"
+            segments={[
+              {
+                id: "introduction",
+                title: "Express it in code.",
+                text: introduction,
+              },
+            ]}
+            label="Listen to introduction"
+          />
+        </div>
+      </NarratorOnly>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <Card>
           <CardHeader>

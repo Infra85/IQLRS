@@ -2,6 +2,7 @@
 import {
   createContext,
   useContext,
+  useCallback,
   useEffect,
   useState,
   useSyncExternalStore,
@@ -24,6 +25,10 @@ import type { NarrationSegment } from "@/lib/narration/text";
 import { Button } from "@/components/ui/button";
 
 const Context = createContext<NarrationController | null>(null);
+const PreferenceContext = createContext<((enabled: boolean) => void) | null>(
+  null,
+);
+const PREFERENCE_KEY = "iqlrs.accessibility.narrator";
 export function useNarration() {
   const controller = useContext(Context);
   if (!controller) throw new Error("NarrationProvider is missing");
@@ -40,12 +45,75 @@ export function NarrationProvider({ children }: { children: React.ReactNode }) {
   );
   const pathname = usePathname();
   useEffect(() => () => controller.stop(), [controller, pathname]);
+  useEffect(() => {
+    try {
+      controller.setEnabled(localStorage.getItem(PREFERENCE_KEY) === "true");
+    } catch {
+      /* Storage can be blocked; the session preference still works. */
+    }
+    const sync = (event: StorageEvent) => {
+      if (event.key === PREFERENCE_KEY || event.key === null)
+        controller.setEnabled(event.key !== null && event.newValue === "true");
+    };
+    const stop = () => controller.stop();
+    window.addEventListener("storage", sync);
+    window.addEventListener("pagehide", stop);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener("pagehide", stop);
+    };
+  }, [controller]);
+  const setEnabled = useCallback(
+    (enabled: boolean) => {
+      controller.setEnabled(enabled);
+      try {
+        localStorage.setItem(PREFERENCE_KEY, String(enabled));
+      } catch {
+        /* Session only. */
+      }
+    },
+    [controller],
+  );
   return (
     <Context.Provider value={controller}>
-      {children}
-      <NarrationPlayer />
+      <PreferenceContext.Provider value={setEnabled}>
+        {children}
+        <NarrationPlayer />
+      </PreferenceContext.Provider>
     </Context.Provider>
   );
+}
+export function NarratorSetting() {
+  const { state } = useNarration();
+  const setEnabled = useContext(PreferenceContext)!;
+  return (
+    <div className="panel p-6 flex flex-wrap items-center justify-between gap-6">
+      <div>
+        <h2 id="narrator-label" className="section-title">
+          Narrator
+        </h2>
+        <p id="narrator-description" className="mt-2 text-sm text-slate-400">
+          Show Listen controls for lessons, explanations, and feedback. Audio
+          starts only when you choose Listen.
+        </p>
+      </div>
+      <Button
+        variant="secondary"
+        role="switch"
+        aria-checked={state.enabled}
+        aria-labelledby="narrator-label"
+        aria-describedby="narrator-description"
+        onClick={() => setEnabled(!state.enabled)}
+      >
+        {state.enabled ? "ON" : "OFF"}
+      </Button>
+    </div>
+  );
+}
+/** Remove narration-only layout and copy along with its controls. */
+export function NarratorOnly({ children }: { children: React.ReactNode }) {
+  const { state } = useNarration();
+  return state.enabled ? <>{children}</> : null;
 }
 export function ListenButton({
   owner,
@@ -68,18 +136,37 @@ export function ListenButton({
     },
     [controller, owner, contentKey],
   );
-  const selected = state.owner === owner && state.status !== "idle";
+  const selected =
+    state.owner === owner &&
+    ["loading", "playing", "paused"].includes(state.status);
+  if (!state.enabled) return null;
   return (
     <Button
       variant="secondary"
       size="sm"
       className={`listen-button ${className}`}
-      aria-label={`${label}: ${segments[startAt]?.title || "educational content"}`}
+      aria-label={`${selected ? "Stop narration" : label}: ${segments[startAt]?.title || "educational content"}`}
       aria-pressed={selected}
-      onClick={() => controller.start(owner, segments, startAt)}
+      onClick={() => {
+        const current = controller.getSnapshot();
+        if (
+          current.owner === owner &&
+          ["loading", "playing", "paused"].includes(current.status)
+        )
+          controller.stop();
+        else controller.start(owner, segments, startAt);
+      }}
     >
-      <Headphones size={15} aria-hidden="true" />
-      {label}
+      {selected ? (
+        <Square size={15} aria-hidden="true" />
+      ) : (
+        <Headphones size={15} aria-hidden="true" />
+      )}
+      {selected
+        ? state.status === "loading"
+          ? "Cancel loading"
+          : "Stop narration"
+        : label}
     </Button>
   );
 }
@@ -90,7 +177,7 @@ function time(seconds: number) {
 }
 function NarrationPlayer() {
   const { controller, state } = useNarration();
-  const active = state.status !== "idle";
+  const active = state.enabled && state.status !== "idle";
   const chunk = state.chunks[state.index];
   useEffect(() => {
     if (!active) return;
@@ -116,7 +203,10 @@ function NarrationPlayer() {
     <section className="narration-player" aria-label="Read aloud player">
       <div className="narration-top">
         <div className="min-w-0">
-          <p className="technical">AI voice · Read aloud</p>
+          <p className="technical">
+            {state.source === "browser" ? "Browser voice" : "AI voice"} · Read
+            aloud
+          </p>
           <p className="narration-title" aria-live="polite">
             {chunk.title}
             <span className="text-slate-400 text-xs font-normal ml-2">
@@ -192,6 +282,11 @@ function NarrationPlayer() {
           </label>
           <select
             id="narration-speed"
+            title={
+              state.source === "browser"
+                ? "Applies at the next spoken sentence"
+                : undefined
+            }
             className="ui-input !w-auto !min-h-10 !py-1 text-sm"
             value={state.speed}
             onChange={(e) => controller.setSpeed(Number(e.target.value))}
@@ -206,6 +301,11 @@ function NarrationPlayer() {
             Volume
             <input
               type="range"
+              title={
+                state.source === "browser"
+                  ? "Applies at the next spoken sentence"
+                  : undefined
+              }
               min="0"
               max="1"
               step="0.05"
@@ -234,34 +334,36 @@ function NarrationPlayer() {
           )}
         </div>
       </div>
-      <div className="narration-timeline">
-        <label htmlFor="narration-position" className="sr-only">
-          Playback position in current segment
-        </label>
-        <input
-          id="narration-position"
-          type="range"
-          min="0"
-          max={state.duration || 1}
-          step="0.1"
-          value={Math.min(state.currentTime, state.duration || 1)}
-          disabled={
-            !state.duration ||
-            state.status === "loading" ||
-            state.status === "error"
-          }
-          onChange={(e) => controller.seek(Number(e.target.value))}
-          aria-valuetext={`${time(state.currentTime)} of ${time(state.duration)}`}
-        />
-        <span className="font-mono text-xs text-slate-400">
-          {time(state.currentTime)} /{" "}
-          {state.duration ? time(state.duration) : "—:—"}
-        </span>
-      </div>
+      {state.source !== "browser" && (
+        <div className="narration-timeline">
+          <label htmlFor="narration-position" className="sr-only">
+            Playback position in current segment
+          </label>
+          <input
+            id="narration-position"
+            type="range"
+            min="0"
+            max={state.duration || 1}
+            step="0.1"
+            value={Math.min(state.currentTime, state.duration || 1)}
+            disabled={
+              !state.duration ||
+              state.status === "loading" ||
+              state.status === "error"
+            }
+            onChange={(e) => controller.seek(Number(e.target.value))}
+            aria-valuetext={`${time(state.currentTime)} of ${time(state.duration)}`}
+          />
+          <span className="font-mono text-xs text-slate-400">
+            {time(state.currentTime)} /{" "}
+            {state.duration ? time(state.duration) : "—:—"}
+          </span>
+        </div>
+      )}
       <div className="narration-bottom">
         <p role="status" className="text-xs text-slate-400">
           {state.status === "loading"
-            ? "Preparing natural narration…"
+            ? "Preparing narration…"
             : state.status === "ended"
               ? "Narration complete"
               : state.status === "paused"

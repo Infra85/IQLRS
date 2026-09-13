@@ -1,4 +1,4 @@
-import { ListenButton } from "@/components/narration/provider";
+import { ListenButton, NarratorOnly } from "@/components/narration/provider";
 import { moduleNarration } from "@/lib/narration/content";
 import { StateExplorer } from "@/components/state-explorer";
 import Link from "next/link";
@@ -35,16 +35,16 @@ export default function ModulePage({ params }: { params: { id: string } }) {
           description={<LearningText text={lesson.introduction} />}
         />
       </div>
-      <div className="lesson-listen">
-        <ListenButton
-          owner={owner}
-          segments={narration}
-          label="Listen to lesson"
-        />
-        <p>
-          Natural AI narration · Includes explanations, notation, and examples.
-        </p>
-      </div>
+      <NarratorOnly>
+        <div className="lesson-listen">
+          <ListenButton
+            owner={owner}
+            segments={narration}
+            label="Listen to lesson"
+          />
+          <p>Read aloud · Includes explanations, notation, and examples.</p>
+        </div>
+      </NarratorOnly>
       <div className="lesson-layout">
         <nav className="lesson-aside" aria-label="Lesson sections">
           <p className="technical mb-3">In this module</p>

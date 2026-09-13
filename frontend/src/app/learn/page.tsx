@@ -1,4 +1,4 @@
-import { ListenButton } from "@/components/narration/provider";
+import { ListenButton, NarratorOnly } from "@/components/narration/provider";
 import { modules } from "./modules";
 import ModuleItem from "./components/ModuleItem";
 import { GuestPrompt } from "@/components/guest-prompt";
@@ -14,19 +14,21 @@ export default function LearnPage() {
         title="The quantum learning path."
         description={introduction}
       />
-      <div className="mb-6">
-        <ListenButton
-          owner="page-introduction"
-          segments={[
-            {
-              id: "introduction",
-              title: "The quantum learning path.",
-              text: introduction,
-            },
-          ]}
-          label="Listen to introduction"
-        />
-      </div>
+      <NarratorOnly>
+        <div className="mb-6">
+          <ListenButton
+            owner="page-introduction"
+            segments={[
+              {
+                id: "introduction",
+                title: "The quantum learning path.",
+                text: introduction,
+              },
+            ]}
+            label="Listen to introduction"
+          />
+        </div>
+      </NarratorOnly>
       <div className="flex flex-wrap justify-between gap-3 pb-6 technical">
         <span>01—04 / Foundations</span>
         <span>05—08 / Algorithms + systems</span>

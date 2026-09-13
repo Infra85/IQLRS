@@ -21,6 +21,7 @@ const {
 const { moduleNarration } = require("../src/lib/narration/content.ts");
 const { modules } = require("../src/app/learn/modules.ts");
 const { NarrationController } = require("../src/lib/narration/controller.ts");
+const { createBrowserVoice } = require("../src/lib/narration/browser.ts");
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 const segment = (text = "A quantum state.") => [
   { id: "intro", title: "Introduction", text, targetId: "intro" },
@@ -127,6 +128,7 @@ test("play, pause, resume, seek, speed, stop, replay and sequential segments", a
       return audio;
     },
   );
+  controller.setEnabled(true);
   controller.start("lesson", segment());
   await tick();
   assert.equal(controller.getSnapshot().status, "playing");
@@ -172,6 +174,7 @@ test("stop and replacement prevent late requests from starting audio", async () 
       return a;
     },
   );
+  controller.setEnabled(true);
   controller.start("a", segment());
   controller.stop();
   assert(pending[0].signal.aborted);
@@ -193,6 +196,7 @@ test("pause while generating stays paused; retry after failure works", async () 
     () => new Promise((r) => (resolve = r)),
     () => new Audio(),
   );
+  controller.setEnabled(true);
   controller.start("a", segment());
   controller.pause();
   resolve(new Blob(["a"]));
@@ -210,6 +214,7 @@ test("pause while generating stays paused; retry after failure works", async () 
     },
     () => new Audio(),
   );
+  retry.setEnabled(true);
   retry.start("a", segment());
   await tick();
   assert.equal(retry.getSnapshot().status, "error");
@@ -218,4 +223,210 @@ test("pause while generating stays paused; retry after failure works", async () 
   await tick();
   assert.equal(retry.getSnapshot().status, "playing");
   retry.stop();
+});
+
+test("default OFF blocks every playback entry point; disabling cancels pending audio", async () => {
+  let calls = 0;
+  let resolve;
+  let signal;
+  const controller = new NarrationController(
+    (text, requestSignal) => {
+      calls++;
+      signal = requestSignal;
+      return new Promise((done) => {
+        resolve = done;
+      });
+    },
+    () => {
+      throw new Error("Disabled narrator created audio");
+    },
+  );
+  assert.equal(controller.getSnapshot().enabled, false);
+  controller.start("a", segment());
+  controller.resume();
+  controller.retry();
+  controller.replay();
+  controller.previous();
+  assert.equal(calls, 0);
+  assert.equal(controller.getSnapshot().status, "idle");
+  controller.setEnabled(true);
+  controller.start("a", segment());
+  assert.equal(calls, 1);
+  controller.setEnabled(false);
+  assert(signal.aborted);
+  resolve(new Blob(["late audio"]));
+  await tick();
+  assert.equal(controller.getSnapshot().status, "idle");
+  assert.equal(controller.getSnapshot().enabled, false);
+  controller.setEnabled(true);
+  assert.equal(calls, 1, "Enabling must never autoplay");
+});
+
+test("browser fallback uses normalized content and shares stop, replacement and failure lifecycle", async () => {
+  const voices = [];
+  const controller = new NarrationController(
+    async () => {
+      throw new Error("No provider");
+    },
+    () => {
+      throw new Error("Fallback must not create audio");
+    },
+    () => {
+      const voice = {
+        stops: 0,
+        speak(text, speed, volume, events) {
+          Object.assign(this, { text, speed, volume, events });
+          events.playing();
+        },
+        stop() {
+          this.stops++;
+        },
+        pause() {},
+        resume() {},
+      };
+      voices.push(voice);
+      return voice;
+    },
+  );
+  controller.setEnabled(true);
+  controller.start("a", segment("|ψ⟩ = α|0⟩ + β|1⟩."));
+  await tick();
+  assert.equal(controller.getSnapshot().source, "browser");
+  assert(voices[0].text.includes("ket psi"));
+  assert.equal(controller.getSnapshot().status, "playing");
+  controller.pause();
+  assert.equal(controller.getSnapshot().status, "paused");
+  controller.resume();
+  assert.equal(controller.getSnapshot().status, "playing");
+  controller.start("b", segment("Measurement."));
+  await tick();
+  assert(voices[0].stops > 0);
+  voices[0].events.ended();
+  voices[0].events.error("stale failure");
+  assert.equal(controller.getSnapshot().owner, "b");
+  assert.equal(controller.getSnapshot().status, "playing");
+  voices[1].events.error("Voice unavailable");
+  assert.equal(controller.getSnapshot().status, "error");
+  controller.resume();
+  assert.equal(controller.getSnapshot().status, "playing");
+  controller.setEnabled(false);
+  assert(voices.at(-1).stops > 0);
+  assert.equal(controller.getSnapshot().status, "idle");
+});
+
+test("paused network loading never starts browser speech until resume", async () => {
+  let reject;
+  let calls = 0;
+  const controller = new NarrationController(
+    () =>
+      new Promise((_, fail) => {
+        reject = fail;
+      }),
+    () => new Audio(),
+    () => ({
+      speak(text, speed, volume, events) {
+        calls++;
+        events.playing();
+      },
+      stop() {},
+      pause() {},
+      resume() {},
+    }),
+  );
+  controller.setEnabled(true);
+  controller.start("a", segment());
+  controller.pause();
+  reject(new Error("Offline"));
+  await tick();
+  assert.equal(calls, 0);
+  assert.equal(controller.getSnapshot().status, "paused");
+  controller.resume();
+  assert.equal(calls, 1);
+  controller.stop();
+});
+
+test("resume after failed network request retries instead of staying loading forever", async () => {
+  let calls = 0;
+  const controller = new NarrationController(
+    async () => {
+      if (++calls === 1) throw new Error("Offline");
+      return new Blob(["audio"]);
+    },
+    () => new Audio(),
+    () => null,
+  );
+  controller.setEnabled(true);
+  controller.start("a", segment());
+  await tick();
+  controller.resume();
+  await tick();
+  assert.equal(calls, 2);
+  assert.equal(controller.getSnapshot().status, "playing");
+  controller.stop();
+});
+
+test("browser transport retains one short utterance, resolves late voices, and cancels cleanly", () => {
+  const spoken = [];
+  let available = [];
+  let cancelled = 0;
+  global.window = {
+    SpeechSynthesisUtterance: class {
+      constructor(text) {
+        this.text = text;
+      }
+    },
+    speechSynthesis: {
+      getVoices: () => available,
+      speak: (utterance) => {
+        spoken.push(utterance);
+        utterance.onstart();
+      },
+      cancel: () => {
+        cancelled++;
+      },
+      pause() {},
+      resume() {},
+    },
+  };
+  let voice;
+  try {
+    voice = createBrowserVoice();
+    let ended = 0;
+    const events = {
+      playing() {},
+      ended() {
+        ended++;
+      },
+      error(message) {
+        assert.fail(message);
+      },
+    };
+    voice.speak(
+      "A quantum state has amplitudes. ".repeat(30),
+      1.25,
+      0.5,
+      events,
+    );
+    assert.equal(spoken.length, 1, "Do not enqueue the entire lesson");
+    assert(spoken[0].text.length <= 240);
+    assert.equal(spoken[0].voice, null);
+    available = [{ lang: "en-GB" }];
+    spoken[0].onend();
+    assert.equal(spoken.length, 2);
+    assert.equal(spoken[1].voice, available[0]);
+    assert.equal(spoken[1].rate, 1.25);
+    voice.pause();
+    spoken[1].onend();
+    assert.equal(spoken.length, 2, "A paused boundary must not advance");
+    voice.resume();
+    assert.equal(spoken.length, 3);
+    voice.stop();
+    assert.equal(spoken[2].onend, null);
+    assert(cancelled >= 2);
+    assert.equal(ended, 0);
+  } finally {
+    voice?.stop();
+    delete global.window;
+  }
+  assert.equal(createBrowserVoice(), null);
 });

@@ -1,5 +1,5 @@
 "use client";
-import { ListenButton } from "@/components/narration/provider";
+import { ListenButton, NarratorOnly } from "@/components/narration/provider";
 import { useState } from "react";
 import type { Question } from "../modules";
 import { Button } from "@/components/ui/button";
@@ -26,20 +26,22 @@ export default function Quiz({ questions }: { questions: Question[] }) {
             <legend className="mb-3 leading-7">
               {qi + 1}. {question.question}
             </legend>
-            <div className="mb-3">
-              <ListenButton
-                owner={`quiz-question-${qi}`}
-                segments={[
-                  {
-                    id: `quiz-${qi}`,
-                    title: `Question ${qi + 1}`,
-                    text: `${question.question}\n${question.options.map((option, i) => `${String.fromCharCode(65 + i)}. ${option}`).join("\n")}`,
-                    targetId: `quiz-question-${qi}`,
-                  },
-                ]}
-                label="Listen to question"
-              />
-            </div>
+            <NarratorOnly>
+              <div className="mb-3">
+                <ListenButton
+                  owner={`quiz-question-${qi}`}
+                  segments={[
+                    {
+                      id: `quiz-${qi}`,
+                      title: `Question ${qi + 1}`,
+                      text: `${question.question}\n${question.options.map((option, i) => `${String.fromCharCode(65 + i)}. ${option}`).join("\n")}`,
+                      targetId: `quiz-question-${qi}`,
+                    },
+                  ]}
+                  label="Listen to question"
+                />
+              </div>
+            </NarratorOnly>
             <div className="grid gap-2">
               {question.options.map((option, oi) => (
                 <label

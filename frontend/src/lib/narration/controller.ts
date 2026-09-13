@@ -3,10 +3,13 @@ import {
   type NarrationChunk,
   type NarrationSegment,
 } from "./text";
+import { createBrowserVoice, type BrowserVoice } from "./browser";
 
 export type PlaybackStatus =
   "idle" | "loading" | "playing" | "paused" | "ended" | "error";
 export type PlaybackState = {
+  enabled: boolean;
+  source: "neural" | "browser";
   status: PlaybackStatus;
   owner: string;
   chunks: NarrationChunk[];
@@ -19,6 +22,8 @@ export type PlaybackState = {
 };
 type Loader = (text: string, signal: AbortSignal) => Promise<Blob>;
 const initial: PlaybackState = {
+  enabled: false,
+  source: "neural",
   status: "idle",
   owner: "",
   chunks: [],
@@ -39,9 +44,11 @@ export class NarrationController {
   private url: string | null = null;
   private generation = 0;
   private wantsPlayback = false;
+  private browser: BrowserVoice | null = null;
   constructor(
     private load: Loader,
     private createAudio: () => HTMLAudioElement = () => new Audio(),
+    private createSpeech: () => BrowserVoice | null = createBrowserVoice,
   ) {}
   getSnapshot = () => this.state;
   getServerSnapshot = () => initial;
@@ -56,6 +63,8 @@ export class NarrationController {
     this.listeners.forEach((fn) => fn());
   }
   private release() {
+    this.browser?.stop();
+    this.browser = null;
     this.request?.abort();
     this.request = null;
     if (this.audio) {
@@ -80,11 +89,17 @@ export class NarrationController {
     this.release();
     this.update({
       ...initial,
+      enabled: this.state.enabled,
       speed: this.state.speed,
       volume: this.state.volume,
     });
   };
+  setEnabled = (enabled: boolean) => {
+    if (!enabled) this.stop();
+    this.update({ enabled });
+  };
   start = (owner: string, segments: NarrationSegment[], startAt = 0) => {
+    if (!this.state.enabled) return;
     this.stop();
     const chunks = prepareNarration(segments);
     if (!chunks.length) return;
@@ -122,12 +137,14 @@ export class NarrationController {
     }
   }
   private async loadIndex(index: number) {
+    if (!this.state.enabled || !this.state.chunks[index]) return;
     this.generation++;
     const token = this.generation;
     this.release();
     this.wantsPlayback = true;
     const request = new AbortController();
     this.request = request;
+    const timeout = setTimeout(() => request.abort(), 15000);
     this.update({
       index,
       status: "loading",
@@ -135,12 +152,55 @@ export class NarrationController {
       currentTime: 0,
       duration: 0,
     });
+    const playBrowser = () => {
+      const browser = this.createSpeech();
+      if (!browser) return false;
+      this.browser = browser;
+      this.request = null;
+      this.update({ source: "browser" });
+      const speak = () =>
+        browser.speak(
+          this.state.chunks[index].spokenText,
+          this.state.speed,
+          this.state.volume,
+          {
+            playing: () => {
+              if (token === this.generation && this.wantsPlayback)
+                this.update({ status: "playing", error: null });
+            },
+            ended: () => {
+              if (token !== this.generation) return;
+              if (index + 1 < this.state.chunks.length)
+                void this.loadIndex(index + 1);
+              else {
+                this.wantsPlayback = false;
+                this.update({ status: "ended" });
+              }
+            },
+            error: (error) => {
+              if (token !== this.generation) return;
+              this.wantsPlayback = false;
+              this.update({ status: "error", error });
+            },
+          },
+        );
+      // A pause during network loading must not start fallback speech.
+      if (this.wantsPlayback) speak();
+      else {
+        this.browser = null;
+        browser.stop();
+        this.update({ status: "paused" });
+      }
+      return true;
+    };
     try {
+      if (this.state.source === "browser" && playBrowser()) return;
       const blob = await this.load(
         this.state.chunks[index].spokenText,
         request.signal,
       );
       if (token !== this.generation) return;
+      this.request = null;
       const audio = this.createAudio();
       this.audio = audio;
       this.url = URL.createObjectURL(blob);
@@ -187,7 +247,9 @@ export class NarrationController {
       if (this.wantsPlayback) await this.playCurrent(token);
       else this.update({ status: "paused" });
     } catch (error) {
-      if (token !== this.generation || request.signal.aborted) return;
+      if (token !== this.generation) return;
+      this.request = null;
+      if (playBrowser()) return;
       this.wantsPlayback = false;
       this.update({
         status: "error",
@@ -196,16 +258,29 @@ export class NarrationController {
             ? error.message
             : "Narration is unavailable. Try again.",
       });
+    } finally {
+      clearTimeout(timeout);
     }
   }
   pause = () => {
+    if (!["playing", "loading"].includes(this.state.status)) return;
     this.wantsPlayback = false;
+    this.browser?.pause();
     this.audio?.pause();
     this.update({ status: "paused" });
   };
   resume = () => {
+    if (!this.state.enabled || !["paused", "error"].includes(this.state.status))
+      return;
+    if (this.state.status === "error") {
+      this.retry();
+      return;
+    }
     this.wantsPlayback = true;
-    if (this.audio) void this.playCurrent(this.generation);
+    if (this.browser) {
+      this.browser.resume();
+      this.update({ status: "playing", error: null });
+    } else if (this.audio) void this.playCurrent(this.generation);
     else if (this.request && !this.request.signal.aborted)
       this.update({ status: "loading" });
     else void this.loadIndex(this.state.index);
@@ -232,11 +307,13 @@ export class NarrationController {
   setSpeed = (speed: number) => {
     if (![0.75, 1, 1.25, 1.5, 2].includes(speed)) return;
     if (this.audio) this.audio.playbackRate = speed;
+    this.browser?.configure?.(speed, this.state.volume);
     this.update({ speed });
   };
   setVolume = (volume: number) => {
     const value = Math.min(1, Math.max(0, volume));
     if (this.audio) this.audio.volume = value;
+    this.browser?.configure?.(this.state.speed, value);
     this.update({ volume: value });
   };
 }
