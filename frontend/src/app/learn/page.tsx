@@ -1,78 +1,43 @@
-"use client";
-
-import { useEffect, useState } from "react";
+import { ListenButton, NarratorOnly } from "@/components/narration/provider";
 import { modules } from "./modules";
 import ModuleItem from "./components/ModuleItem";
-
+import { GuestPrompt } from "@/components/guest-prompt";
+import { PageHeader } from "@/components/ui/page";
+const introduction =
+  "Start with states and measurement. Explore the algorithms. Then make the ideas operational in your own circuits.";
 export default function LearnPage() {
-  const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
-  const [showLoginPopup, setShowLoginPopup] = useState(false);
-
-  useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    setLoggedIn(!!token);
-
-    // Show recommendation popup only when user is not logged in
-    if (!token) {
-      setShowLoginPopup(true);
-    }
-  }, []);
-
-  // Wait until login status is checked
-  if (loggedIn === null) {
-    return null;
-  }
-
   return (
-    <main className="min-h-screen bg-gray-950 p-8 text-white">
-      {/* Login Recommendation Popup */}
-      {showLoginPopup && !loggedIn && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-gray-800 bg-gray-900 p-8 text-center shadow-2xl">
-            <h2 className="text-2xl font-bold">
-              Login Recommended
-            </h2>
-
-            <p className="mt-4 text-gray-400">
-              You are recommended to log in for a better experience
-              and to access your dashboard.
-            </p>
-
-            <div className="mt-6 flex flex-col gap-3">
-              {/* Login */}
-              <button
-                onClick={() => {
-                  window.location.href = "/login";
-                }}
-                className="w-full rounded-lg bg-quantum-600 px-6 py-3 font-medium text-white transition hover:bg-quantum-700"
-              >
-                Login
-              </button>
-
-              {/* Continue without login */}
-              <button
-                onClick={() => {
-                  setShowLoginPopup(false);
-                }}
-                className="w-full rounded-lg border border-gray-700 px-6 py-3 font-medium text-gray-300 transition hover:bg-gray-800 hover:text-white"
-              >
-                Continue without login
-              </button>
-            </div>
-          </div>
+    <main className="page">
+      <GuestPrompt />
+      <PageHeader
+        eyebrow={`CURRICULUM / ${String(modules.length).padStart(2, "0")} MODULES`}
+        title="The quantum learning path."
+        description={introduction}
+      />
+      <NarratorOnly>
+        <div className="mb-6">
+          <ListenButton
+            owner="page-introduction"
+            segments={[
+              {
+                id: "introduction",
+                title: "The quantum learning path.",
+                text: introduction,
+              },
+            ]}
+            label="Listen to introduction"
+          />
         </div>
-      )}
-
-      {/* Learning Modules */}
-      <h1 className="mb-6 text-3xl font-bold">
-        Quantum Computing Learning Path
-      </h1>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {modules.map((module) => (
-          <ModuleItem key={module.id} module={module} />
-        ))}
+      </NarratorOnly>
+      <div className="flex flex-wrap justify-between gap-3 pb-6 technical">
+        <span>01—04 / Foundations</span>
+        <span>05—08 / Algorithms + systems</span>
       </div>
+      <section className="module-index" aria-label="Learning modules">
+        {modules.map((module, index) => (
+          <ModuleItem key={module.id} module={module} index={index} />
+        ))}
+      </section>
     </main>
   );
 }

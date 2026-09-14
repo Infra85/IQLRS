@@ -1,18 +1,4 @@
-/**
- * Central catalogue of the 8 learning modules.
- * Each module includes rich learning content:
- * - objectives
- * - introduction
- * - multiple educational sections (each with a title, description, and a lightweight diagram)
- * - a worked example
- * - key takeaways
- * - exactly 3 multiple‑choice questions (4 options each)
- * - flag indicating if it can be tried in the builder
- * - optional builder link (uses existing /builder route)
- */
-// -------------------------------------------------------------------
-// Helper types
-// -------------------------------------------------------------------
+
 export type Question = {
   question: string;
   options: string[];
@@ -23,7 +9,7 @@ export type Question = {
 export type Section = {
   title: string;
   description: string;
-  diagram: string; // raw text/diagram that can be rendered in <pre> or as JSX
+  diagram: string; 
 };
 
 export type Module = {
@@ -32,16 +18,14 @@ export type Module = {
   objectives: string;
   introduction: string;
   sections: Section[];
-  workedExample: string; // code or step‑by‑step explanation
+  workedExample: string; 
   keyTakeaways: string;
   questions: Question[];
   tryInBuilder: boolean;
-  builderLink?: string; // relative URL to the existing builder page
+  builderLink?: string; 
 };
 
-// -------------------------------------------------------------------
-// Module data
-// -------------------------------------------------------------------
+
 const learningModules: Module[] = [
   {
     id: 1,
@@ -421,9 +405,7 @@ const learningModules: Module[] = [
   }
 ];
 
-// The original curriculum predates the four-choice quiz UI. Normalizing here
-// keeps the catalogue as the single source of truth while guaranteeing every
-// rendered question has the same, accessible choice count.
+
 export const modules: Module[] = learningModules.map((module) => ({
   ...module,
   questions: module.questions.map((question) => ({

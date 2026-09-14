@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import circuits, code, ai, auth, progress, collaborate
+from app.api import circuits, code, ai, auth, progress, collaborate, speech
 from app.api.dashboard import router as dashboard_router
 
 app = FastAPI(
@@ -20,6 +20,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(speech.router, prefix="/api/speech", tags=["speech"])
 app.include_router(circuits.router, prefix="/api/circuits", tags=["circuits"])
 app.include_router(code.router, prefix="/api/code", tags=["code"])
 app.include_router(ai.router, prefix="/api/ai", tags=["ai"])
