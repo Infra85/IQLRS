@@ -26,6 +26,13 @@ docker compose --profile tools run --rm migrate
 docker compose up -d backend frontend
 ```
 
+For the recommended VPS deployment, Caddy is included in Compose and terminates
+HTTPS for `iqlrs.org`/`www.iqlrs.org`. Set `ACME_EMAIL` in `.env`, point Cloudflare
+DNS records at the VPS public IP, and run `./deploy/update.sh`. Caddy obtains and
+renews the origin certificate automatically. Keep Cloudflare SSL/TLS mode at
+**Full (strict)**. Do not expose ports 3000, 8000, or 5432 publicly; Compose only
+exposes 80/443 through Caddy.
+
 Terminate HTTPS with your hosting platform or reverse proxy. Compose publishes
 only the frontend on `127.0.0.1:3000`; backend and PostgreSQL stay on the private
 network. Forward the public website to that port. Readiness is checked through
