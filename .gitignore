@@ -41,3 +41,6 @@ htmlcov/
 
 # Generated neural narration cache
 backend/.cache/
+*.tsbuildinfo
+.env.*
+!.env.example

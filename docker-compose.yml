@@ -2,52 +2,61 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
+        API_PROXY_URL: http://backend:8000
+    restart: unless-stopped
     ports:
-      - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - "127.0.0.1:3000:3000"
     depends_on:
-      - backend
-    volumes:
-      - ./frontend/src:/app/src
+      backend:
+        condition: service_healthy
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/quantumlearn
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - SMTP_EMAIL=${SMTP_EMAIL:-}
-      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
-      - TTS_PROVIDER=${TTS_PROVIDER:-openai}
-      - TTS_MODEL=${TTS_MODEL:-gpt-4o-mini-tts}
-      - TTS_VOICE=${TTS_VOICE:-marin}
-      - TTS_CACHE_PATH=/app/.cache/narration.sqlite3
-      - TTS_CACHE_MAX_BYTES=${TTS_CACHE_MAX_BYTES:-134217728}
-      - TTS_CACHE_TTL_SECONDS=${TTS_CACHE_TTL_SECONDS:-604800}
-      - TTS_DAILY_CHAR_LIMIT=${TTS_DAILY_CHAR_LIMIT:-250000}
-      - TTS_REQUESTS_PER_MINUTE=${TTS_REQUESTS_PER_MINUTE:-40}
-      - TTS_MAX_CONCURRENT=${TTS_MAX_CONCURRENT:-2}
+      ENVIRONMENT: production
+      DATABASE_URL: postgresql://iqlrs:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@db:5432/quantumlearn
+      TTS_CACHE_PATH: /app/.cache/narration.sqlite3
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
-      - ./backend/app:/app/app
       - narration_cache:/app/.cache
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready', timeout=5)"]
+      interval: 20s
+      timeout: 6s
+      retries: 5
+
+  migrate:
+    build: ./backend
+    profiles: ["tools"]
+    env_file: .env
+    environment:
+      ENVIRONMENT: production
+      DATABASE_URL: postgresql://iqlrs:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@db:5432/quantumlearn
+    command: ["python", "-m", "app.migrate"]
+    depends_on:
+      db:
+        condition: service_healthy
 
   db:
     image: postgres:16-alpine
-    ports:
-      - "5432:5432"
+    restart: unless-stopped
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=quantumlearn
+      POSTGRES_USER: iqlrs
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      POSTGRES_DB: quantumlearn
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U iqlrs -d quantumlearn"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
   pgdata:

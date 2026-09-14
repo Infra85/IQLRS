@@ -1,7 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+from app.core.database import get_db
+from app.core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import circuits, code, ai, auth, progress, collaborate, speech
+from app.api import circuits, ai, auth, progress, speech
 from app.api.dashboard import router as dashboard_router
 
 app = FastAPI(
@@ -12,9 +16,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-         "http://127.0.0.1:3000"],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -22,13 +24,23 @@ app.add_middleware(
 
 app.include_router(speech.router, prefix="/api/speech", tags=["speech"])
 app.include_router(circuits.router, prefix="/api/circuits", tags=["circuits"])
-app.include_router(code.router, prefix="/api/code", tags=["code"])
+
 app.include_router(ai.router, prefix="/api/ai", tags=["ai"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
-app.include_router(progress.router, prefix="/api/progress", tags=["progress"])
-app.include_router(collaborate.router, prefix="/api/collaborate", tags=["collaborate"])
+app.include_router(progress.router)
+
 app.include_router(dashboard_router)
 
 @app.get("/")
 async def root():
     return {"status": "ok", "service": "IQLRS-API"}
+
+
+@app.get("/health/ready")
+def ready(db: Session = Depends(get_db)):
+    try:
+        db.execute(text("SELECT user_id, otp_attempts FROM users LIMIT 1"))
+        db.execute(text("SELECT key FROM request_limits LIMIT 1"))
+    except Exception:
+        raise HTTPException(503, "Database unavailable or migrations missing") from None
+    return {"status": "ready"}

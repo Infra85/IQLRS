@@ -25,10 +25,9 @@ def verify_password(
     password: str,
     hashed_password: str,
 ) -> bool:
-    return pwd_context.verify(
-        password,
-        hashed_password,
-    )
+    if not hashed_password or len(password.encode("utf-8")) > 72:
+        return False
+    return pwd_context.verify(password, hashed_password)
 
 
 def create_access_token(
@@ -51,3 +50,9 @@ def create_access_token(
         SECRET_KEY,
         algorithm=ALGORITHM,
     )
+
+
+def hash_otp(email: str, otp: str) -> str:
+    import hashlib
+    import hmac
+    return hmac.new(settings.secret_key.encode(), f"{email}:{otp}".encode(), hashlib.sha256).hexdigest()

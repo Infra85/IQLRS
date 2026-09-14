@@ -4,6 +4,7 @@ import smtplib
 import logging
 import ssl
 from email.message import EmailMessage
+from email.utils import formataddr, formatdate, make_msgid
 
 from pydantic import EmailStr, TypeAdapter, ValidationError
 
@@ -35,7 +36,15 @@ def send_otp_email(to_email: str, otp: str):
     message = EmailMessage()
 
     message["Subject"] = "Verify your IQLRS account"
-    message["From"] = sender
+    message["From"] = formataddr(("IQLRS", sender))
+    message["Date"] = formatdate(localtime=False)
+    message["Message-ID"] = make_msgid(domain=sender.split("@")[1])
+    message["Auto-Submitted"] = "auto-generated"
+    if settings.smtp_reply_to:
+        try:
+            message["Reply-To"] = str(TypeAdapter(EmailStr).validate_python(settings.smtp_reply_to))
+        except ValidationError:
+            raise EmailDeliveryError("Email reply-to configuration is invalid.") from None
     message["To"] = to_email
 
     message.set_content(
@@ -48,7 +57,8 @@ Your email verification OTP is:
 
 {otp}
 
-This OTP will expire in 10 minutes.
+This code expires in 10 minutes. Enter it only on the IQLRS verification page.
+Never share this code. IQLRS staff will never ask you for it.
 
 If you did not create this account, you can ignore this email.
 
@@ -58,9 +68,11 @@ IQLRS Team
     )
 
     try:
-        with smtplib.SMTP("smtp.gmail.com", 587, timeout=10) as server:
-            server.starttls(context=ssl.create_default_context())
-            server.login(sender, settings.smtp_password)
+        with (smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port, timeout=10, context=ssl.create_default_context())
+              if settings.smtp_ssl else smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10)) as server:
+            if not settings.smtp_ssl:
+                server.starttls(context=ssl.create_default_context())
+            server.login(settings.smtp_username or sender, settings.smtp_password)
             server.send_message(message)
     except smtplib.SMTPAuthenticationError:
         logger.error("Verification email unavailable: SMTP authentication failed")

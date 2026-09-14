@@ -44,8 +44,8 @@ export default function Home() {
           <Link href="/learn">
             Browse modules <b>→</b>
           </Link>
-          <Link href="/editor">
-            Use the code lab <b>→</b>
+          <Link href="/ai">
+            Use the AI tutor <b>→</b>
           </Link>
           <Link href="/dashboard">
             Track progress <b>→</b>

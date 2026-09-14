@@ -564,6 +564,7 @@ export default function CircuitBuilder() {
       {result && (
         <section className="grid gap-6 lg:grid-cols-2">
           <div id="result-interpretation" className="panel p-5 lg:col-span-2">
+            <p className="text-sm text-slate-400 mb-4">{result.simulation_id ? "Saved to your account. View your activity in My progress." : "Guest simulation — sign in before running to save results and track progress."}</p>
             <div className="narration-section-heading">
               <h2 className="section-title">Understanding this result</h2>
               <ListenButton

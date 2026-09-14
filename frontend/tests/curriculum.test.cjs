@@ -1,0 +1,10 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const ts = require('typescript');
+const source = fs.readFileSync(path.join(__dirname, '../src/app/learn/modules.ts'), 'utf8');
+const compiled = ts.transpileModule(source, {compilerOptions: {module: ts.ModuleKind.CommonJS}}).outputText;
+const exported = {};
+new Function('exports', compiled)(exported);
+const server = JSON.parse(fs.readFileSync(path.join(__dirname, '../../backend/data/modules.json'), 'utf8'));
+assert.deepEqual(exported.modules, server, 'Rendered questions and server-side quiz scoring must match.');

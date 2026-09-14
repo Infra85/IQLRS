@@ -1,6 +1,5 @@
 """Sandboxed code execution for user-submitted quantum code."""
 
-import subprocess
 
 
 def execute_in_sandbox(code: str, framework: str, timeout: int = 30) -> dict:

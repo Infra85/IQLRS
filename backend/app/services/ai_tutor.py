@@ -1,17 +1,17 @@
-import os
-from openai import OpenAI
+from openai import AsyncOpenAI
+from app.core.config import settings
 
 
 class AITutor:
     """AI Tutor service for quantum computing education."""
 
     def __init__(self, api_key: str | None = None):
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        self.api_key = api_key or settings.openai_api_key
 
         if not self.api_key:
             raise ValueError("OPENAI_API_KEY is not configured.")
 
-        self.client = OpenAI(api_key=self.api_key)
+        self.client = AsyncOpenAI(api_key=self.api_key, timeout=45, max_retries=1)
 
     async def chat(
         self,
@@ -45,8 +45,10 @@ Rules:
 - Encourage understanding rather than simply giving an answer.
 """
 
-        response = self.client.responses.create(
-            model="gpt-5.6-luna",
+        response = await self.client.responses.create(
+            model=settings.ai_model,
+            max_output_tokens=2000,
+            store=False,
             instructions=instructions,
             input=f"""
 {context_text}
@@ -79,8 +81,10 @@ Return:
 Be beginner-friendly and do not invent errors that are not present.
 """
 
-        response = self.client.responses.create(
-            model="gpt-5.6-luna",
+        response = await self.client.responses.create(
+            model=settings.ai_model,
+            max_output_tokens=2000,
+            store=False,
             instructions=instructions,
             input=f"""
 Student code:

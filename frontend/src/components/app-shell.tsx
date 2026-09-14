@@ -8,9 +8,8 @@ const navigation = [
   { href: "/", label: "Overview" },
   { href: "/learn", label: "Learn" },
   { href: "/builder", label: "Circuit builder" },
-  { href: "/editor", label: "Code lab" },
+  { href: "/ai", label: "AI tutor" },
   { href: "/dashboard", label: "My progress" },
-  { href: "/instructor", label: "Instructor" },
 ];
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

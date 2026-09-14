@@ -13,16 +13,21 @@ def _simulate(payload: dict) -> dict:
     return response.json()
 
 
-def _request(method: str, path: str, **kwargs) -> httpx.Response:
-    async def send() -> httpx.Response:
-        transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(
-            transport=transport,
-            base_url="http://testserver",
-        ) as client:
-            return await client.request(method, path, **kwargs)
+_client = None
 
-    return asyncio.run(send())
+
+import pytest
+
+@pytest.fixture(autouse=True)
+def circuit_client(api):
+    global _client
+    _client = api[0]
+    yield
+    _client = None
+
+
+def _request(method: str, path: str, **kwargs):
+    return _client.request(method, path, **kwargs)
 
 
 def _amp(pair: list[float]) -> complex:

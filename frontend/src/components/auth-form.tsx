@@ -53,16 +53,12 @@ export function AuthForm({
     try {
       const path =
         mode === "verify"
-          ? `/api/auth/verify-otp?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`
+          ? "/api/auth/verify-otp"
           : `/api/auth/${mode}`;
       const response = await fetch(`${API_URL}${path}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        ...(mode !== "verify" && {
-          body: JSON.stringify(
-            mode === "login" ? { email, password } : { name, email, password },
-          ),
-        }),
+        body: JSON.stringify(mode === "verify" ? {email, otp} : mode === "login" ? {email, password} : {name, email, password}),
       });
       const data = await response.json();
       if (!response.ok)
@@ -153,13 +149,15 @@ export function AuthForm({
                 <Input
                   id="password"
                   type="password"
+                  minLength={1}
+                  maxLength={72}
                   autoComplete={
                     mode === "login" ? "current-password" : "new-password"
                   }
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder={
-                    mode === "login" ? "Your password" : "Choose a password"
+                    mode === "login" ? "Your password" : "At least 12 characters"
                   }
                   required
                 />

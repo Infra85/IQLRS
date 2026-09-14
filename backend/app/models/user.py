@@ -73,9 +73,11 @@ class User(Base):
     )
 
     otp_code: Mapped[str | None] = mapped_column(
-        String(6),
+        String(64),
         nullable=True,
     )
+
+    otp_attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
 
     otp_expires_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),

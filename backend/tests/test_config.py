@@ -23,3 +23,14 @@ def test_env_precedence_and_optional_smtp(tmp_path, monkeypatch):
     assert merged.smtp_email == "backend@example.com" and merged.smtp_password == "test-only"
     monkeypatch.setenv("SMTP_EMAIL", "process@example.com")
     assert Settings(_env_file=(root_env, backend_env)).smtp_email == "process@example.com"
+
+
+def test_production_rejects_defaults_and_hides_secrets():
+    import pytest
+    from pydantic import ValidationError
+    with pytest.raises(ValidationError) as failure:
+        Settings(_env_file=None, environment='production', smtp_password='DO-NOT-PRINT-ME')
+    assert 'SECRET_KEY' in str(failure.value)
+    assert 'DO-NOT-PRINT-ME' not in str(failure.value)
+    config = Settings(_env_file=None, environment='production', secret_key='test-only-configuration-secret-32-characters', database_url='postgresql://app:example@db/production', smtp_email='sender@example.com', smtp_password='example', openai_api_key='example', cors_origins=['https://learn.example.com'])
+    assert config.environment == 'production'

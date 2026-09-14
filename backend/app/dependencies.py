@@ -49,7 +49,15 @@ def get_current_user(
         .first()
     )
 
-    if user is None:
+    if user is None or not user.email_verified:
         raise credentials_exception
 
     return user
+
+optional_oauth2 = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
+
+
+def get_optional_user(token: str | None = Depends(optional_oauth2), db: Session = Depends(get_db)):
+    if token is None:
+        return None
+    return get_current_user(token=token, db=db)

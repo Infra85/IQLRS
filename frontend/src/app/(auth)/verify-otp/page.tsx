@@ -1,8 +1,5 @@
 import { AuthForm } from "@/components/auth-form";
-export default function VerifyOTPPage({
-  searchParams,
-}: {
-  searchParams: { email?: string };
-}) {
-  return <AuthForm mode="verify" email={searchParams.email} />;
+export default async function VerifyOTPPage({searchParams}: {searchParams: Promise<{email?: string}>}) {
+  const {email} = await searchParams;
+  return <AuthForm mode="verify" email={email} />;
 }

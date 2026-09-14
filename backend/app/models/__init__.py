@@ -63,7 +63,10 @@ from app.models.collaboration import (
 )
 
 
+from app.models.rate_limit import RateLimit
+
 __all__ = [
+    "RateLimit",
     "User",
     "Role",
     "UserRole",

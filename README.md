@@ -12,12 +12,12 @@ v.2- For instructure, researchers: High end simulation available, for complex co
 
 - **Interactive Learning Modules** — Structured content covering quantum computing fundamentals through advanced algorithms
 - **Visual Circuit Builder** — Drag-and-drop quantum circuit design
-- **Code Editor** — In-browser coding with Qiskit, PennyLane, and Cirq support
+- **Code Editor (unreleased)** — Source retained; execution is not exposed
 - **Circuit Simulator** — Real-time simulation with multiple backends
 - **State Visualization** — Bloch spheres, probability distributions, state vectors
 - **AI Tutor** — Concept explanations, error detection, optimization suggestions
 - **Assessments** — Quizzes, coding challenges, and progress tracking
-- **Dashboards** — Learner and instructor analytics
+- **Dashboard** — Persisted learner activity; instructor analytics is unreleased
 
 ## Features v.2
 
@@ -38,8 +38,8 @@ v.2- For instructure, researchers: High end simulation available, for complex co
 
 ### Prerequisites
 
-- Node.js 20+
-- Python 3.11+
+- Node.js 22+
+- Python 3.12+
 - PostgreSQL
 - Docker (optional)
 
@@ -51,7 +51,9 @@ git clone
 cd quantum-learn
 
 # Start everything with Docker
-docker compose up
+docker compose up -d db
+docker compose --profile tools run --rm migrate
+docker compose up -d backend frontend
 
 # Or run individually:
 
@@ -63,35 +65,19 @@ npm run dev
 # Backend
 cd backend
 pip install -r requirements.txt
+python -m app.migrate
 uvicorn app.main:app --reload
 ```
 
 
-### Backend environment and email verification
+### Production deployment
 
-Copy `.env.example` to `.env` at the repository root before starting locally or
-with Compose. The backend loads that file regardless of its working directory;
-an optional `backend/.env` overrides it, and process environment variables take
-precedence over both. Compose forwards the SMTP variables to the backend.
-
-The default local database is `quantumlearn`, matching the database already
-provisioned by Compose (local host `localhost`, container host `db`). If your
-existing local database is named `IQLRS`, set `DATABASE_URL` in your ignored
-`.env` to point to it. No database or existing Docker volume needs to be renamed.
-
-The app can start without SMTP credentials; registration returns a clear HTTP
-503 until email is configured. To enable registration, set `SMTP_EMAIL` to your
-Gmail sender address and `SMTP_PASSWORD` to its SMTP app password in `.env` or
-your deployment environment, then restart the backend. Never commit credentials.
-The sender uses Gmail on port 587 with certificate-verified STARTTLS.
-
-Successful registration still requires the emailed OTP before login. Failed
-email delivery rolls back new accounts. An existing unverified account can retry
-registration using its original password to send a fresh OTP; its name and password
-are preserved, and failed retries preserve the previous OTP. Verified accounts
-continue to receive the existing duplicate-email error. SMTP acceptance and a
-database commit cannot be atomic: if the database commit fails after sending,
-the received code may not work and registration must be retried.
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for required configuration, the
+versioned PostgreSQL migration, legacy data preservation, email DNS requirements,
+startup commands, and verified limitations. Run migrations before starting the API.
+The code lab, instructor analytics, and collaboration are unreleased and hidden.
+Signed-in simulations, quiz progress, dashboards, and AI conversations use real
+persisted data. Guest circuit experiments remain available without saving.
 
 ## Project Structure
 

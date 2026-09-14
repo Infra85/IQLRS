@@ -9,8 +9,9 @@ import { getModule, modules } from "../modules";
 import { PageHeader } from "@/components/ui/page";
 import { Button } from "@/components/ui/button";
 import { LearningText } from "@/components/learning-text";
-export default function ModulePage({ params }: { params: { id: string } }) {
-  const lesson = getModule(Number(params.id));
+export default async function ModulePage({ params }: { params: Promise<{ id: string }> }) {
+  const {id} = await params;
+  const lesson = getModule(Number(id));
   if (!lesson) notFound();
   const narration = moduleNarration(lesson);
   const owner = `lesson-${lesson.id}`;
@@ -125,7 +126,7 @@ export default function ModulePage({ params }: { params: { id: string } }) {
               </Button>
             )}
           </section>
-          <Quiz key={lesson.id} questions={lesson.questions} />
+          <Quiz moduleId={lesson.id} key={lesson.id} questions={lesson.questions} />
           <div className="flex flex-wrap justify-between gap-4 pt-8">
             <Button asChild variant="secondary">
               <Link href={lesson.id > 1 ? `/learn/${lesson.id - 1}` : "/learn"}>

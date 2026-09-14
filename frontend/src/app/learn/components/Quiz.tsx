@@ -1,13 +1,28 @@
 "use client";
 import { ListenButton, NarratorOnly } from "@/components/narration/provider";
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import type { Question } from "../modules";
 import { Button } from "@/components/ui/button";
 import { Status } from "@/components/ui/page";
-export default function Quiz({ questions }: { questions: Question[] }) {
+export default function Quiz({ questions, moduleId }: { questions: Question[]; moduleId: number }) {
   const [answers, setAnswers] = useState<(number | null)[]>(() =>
     questions.map(() => null),
   );
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+  const [saveError, setSaveError] = useState(false);
+  async function submit() {
+    setSaving(true); setSaveError(false);
+    try {
+      if (localStorage.getItem("access_token")) {
+        await apiFetch(`/api/progress/lessons/${moduleId}/quiz`, {method: "POST", body: JSON.stringify({answers})});
+        setSaveMessage("Your result is saved to your dashboard.");
+      } else { setSaveMessage("Sign in to save your learning progress."); }
+      setSubmitted(true);
+    } catch(error) { setSaveError(true); setSaveMessage(error instanceof Error ? error.message : "Unable to save progress. Please retry."); }
+    finally { setSaving(false); }
+  }
   const [submitted, setSubmitted] = useState(false);
   const score = answers.reduce<number>(
     (total, answer, index) =>
@@ -20,6 +35,7 @@ export default function Quiz({ questions }: { questions: Question[] }) {
         Knowledge check / {questions.length} questions
       </p>
       <h2>Test your understanding.</h2>
+      {saveMessage && <Status kind={saveError ? "error" : "info"}>{saveMessage}</Status>}
       <div className="my-8 space-y-8">
         {questions.map((question, qi) => (
           <fieldset key={question.question} id={`quiz-question-${qi}`}>
@@ -131,10 +147,10 @@ export default function Quiz({ questions }: { questions: Question[] }) {
       ) : (
         <div className="flex flex-wrap items-center gap-4">
           <Button
-            disabled={answers.some((a) => a === null)}
-            onClick={() => setSubmitted(true)}
+            disabled={saving || answers.some((a) => a === null)}
+            onClick={submit}
           >
-            Check answers
+            {saving ? "Saving…" : "Check answers"}
           </Button>
           <span className="text-sm text-slate-400">
             {answers.filter((a) => a !== null).length} of {questions.length}{" "}

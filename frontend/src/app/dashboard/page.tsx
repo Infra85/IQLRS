@@ -19,17 +19,19 @@ type Course = {
 
 type DashboardData = {
   user: {
-    id: number;
+    id: string;
     name: string;
     email: string;
   };
   courses: Course[];
+  recent_activity: {title: string; at: string; href: string}[];
   statistics: {
     quiz_score: number;
     challenges_completed: number;
     challenges_total: number;
     streak: number;
-    xp: number;
+    simulations: number;
+    modules_completed: number;
   };
 };
 
@@ -78,7 +80,6 @@ export default function DashboardPage() {
 
         setDashboard(data);
       } catch (err) {
-        console.error(err);
         setError("Unable to load dashboard data.");
       } finally {
         setLoading(false);
@@ -114,12 +115,9 @@ export default function DashboardPage() {
   const { user, courses, statistics } = dashboard;
   const stats = [
     { label: "Quiz score", value: `${statistics.quiz_score}%` },
-    {
-      label: "Challenges",
-      value: `${statistics.challenges_completed} / ${statistics.challenges_total}`,
-    },
+    { label: "Simulations", value: statistics.simulations.toLocaleString() },
     { label: "Learning streak", value: `${statistics.streak} days` },
-    { label: "Experience points", value: statistics.xp.toLocaleString() },
+    { label: "Modules completed", value: statistics.modules_completed.toLocaleString() },
   ];
   return (
     <main className="page">
@@ -140,6 +138,10 @@ export default function DashboardPage() {
             <p className="stat-value">{stat.value}</p>
           </div>
         ))}
+      </section>
+      <section className="mb-8">
+        <h2 className="section-title mb-5">Recent activity</h2>
+        {dashboard.recent_activity.length ? <ul className="space-y-3">{dashboard.recent_activity.map((activity, index) => <li key={`${activity.at}-${index}`} className="panel p-4 flex flex-wrap justify-between gap-3"><Link href={activity.href}>{activity.title} ↗</Link><time className="text-sm text-slate-400" dateTime={activity.at}>{new Date(activity.at).toLocaleString()}</time></li>)}</ul> : <p className="text-slate-400">Complete a quiz or run a circuit to start your activity record.</p>}
       </section>
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <section>

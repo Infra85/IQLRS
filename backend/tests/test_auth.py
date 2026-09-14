@@ -1,7 +1,7 @@
 """Registration uses a real isolated database and never contacts SMTP."""
 
 import smtplib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock
 
 import pytest
@@ -15,17 +15,14 @@ from app.api import auth
 from app.core import email
 from app.core.config import Settings
 from app.core.database import get_db
-from app.core.security import hash_password
+from app.core.security import hash_password, hash_otp
 from app.models.user import User
 
 PAYLOAD = {"email": "learner@example.com", "password": "test-registration-password", "name": "Learner"}
 
 
 @pytest.fixture
-def setup(monkeypatch):
-    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
-    User.__table__.create(engine)
-    sessions = sessionmaker(bind=engine)
+def setup(monkeypatch, sessions):
     app = FastAPI()
     app.include_router(auth.router, prefix="/api/auth")
 
@@ -39,7 +36,6 @@ def setup(monkeypatch):
     monkeypatch.setattr(email.smtplib, "SMTP", smtp)
     with TestClient(app) as client:
         yield client, sessions, smtp
-    engine.dispose()
 
 
 def register(client, **changes):
@@ -48,11 +44,11 @@ def register(client, **changes):
 
 def seed(sessions, verified=False):
     with sessions() as db:
-        user = User(email=PAYLOAD["email"], name="Original", hashed_password=hash_password(PAYLOAD["password"]), email_verified=verified,
-                    otp_code="123456", otp_expires_at=datetime.utcnow() + timedelta(minutes=5))
+        user = User(email=PAYLOAD["email"], name="Original", password_hash=hash_password(PAYLOAD["password"]), email_verified=verified,
+                    otp_code="123456", otp_expires_at=datetime.now(timezone.utc) + timedelta(minutes=5))
         db.add(user)
         db.commit()
-        return user.id
+        return user.user_id
 
 
 def test_valid_registration_requires_otp_before_login(setup, monkeypatch):
@@ -63,16 +59,16 @@ def test_valid_registration_requires_otp_before_login(setup, monkeypatch):
     assert response.status_code == 201
     with sessions() as db:
         user = db.query(User).one()
-        assert response.json() == {"message": "User registered successfully", "user_id": user.id}
-        assert not user.email_verified and user.hashed_password != PAYLOAD["password"]
-        code = user.otp_code
-        assert len(code) == 6 and code.isdigit()
-        assert user.otp_expires_at > datetime.utcnow()
+        assert response.json() == {"message": "User registered successfully", "user_id": str(user.user_id)}
+        assert not user.email_verified and user.password_hash != PAYLOAD["password"]
+        code = sender.call_args.args[1]
+        assert user.otp_code == hash_otp(PAYLOAD["email"], code)
+        assert user.otp_expires_at > datetime.now(timezone.utc)
         sender.assert_called_once_with(PAYLOAD["email"], code)
     login = {"email": PAYLOAD["email"], "password": PAYLOAD["password"]}
     assert client.post("/api/auth/login", json=login).status_code == 403
-    assert client.post("/api/auth/verify-otp", params={"email": PAYLOAD["email"], "otp": "bad"}).status_code == 400
-    assert client.post("/api/auth/verify-otp", params={"email": PAYLOAD["email"], "otp": code}).status_code == 200
+    assert client.post("/api/auth/verify-otp", json={"email": PAYLOAD["email"], "otp": "000000"}).status_code == 400
+    assert client.post("/api/auth/verify-otp", json={"email": PAYLOAD["email"], "otp": code}).status_code == 200
     assert client.post("/api/auth/login", json=login).status_code == 200
     with sessions() as db:
         user = db.query(User).one()
@@ -124,7 +120,9 @@ def test_smtp_success_uses_tls_login_and_email(setup):
     server.login.assert_called_once_with("sender@example.com", "test-only-password")
     message = server.send_message.call_args.args[0]
     with sessions() as db:
-        assert db.query(User).one().otp_code in message.get_content()
+        assert "Never share this code" in message.get_content()
+        assert len(db.query(User).one().otp_code) == 64
+        assert message["Date"] and message["Message-ID"] and message["Auto-Submitted"] == "auto-generated"
     assert message["To"] == PAYLOAD["email"]
 
 
@@ -151,16 +149,16 @@ def test_unverified_retry_preserves_account_and_rolls_back_failed_otp(setup, mon
     assert register(client, name="Replacement").status_code == 503
     with sessions() as db:
         user = db.query(User).one()
-        assert user.id == user_id and user.otp_code == "123456"
+        assert user.user_id == user_id and user.otp_code == "123456"
         old_expiry = user.otp_expires_at
     server.login.side_effect = None
     response = register(client, name="Replacement")
-    assert response.status_code == 201 and response.json()["user_id"] == user_id
+    assert response.status_code == 201 and response.json()["user_id"] == str(user_id)
     with sessions() as db:
         user = db.query(User).one()
         assert user.name == "Original" and not user.email_verified
-        assert user.otp_code == "754321" and user.otp_expires_at > old_expiry
-    assert client.post("/api/auth/verify-otp", params={"email": PAYLOAD["email"], "otp": "123456"}).status_code == 400
+        assert user.otp_code == hash_otp(PAYLOAD["email"], "754321") and user.otp_expires_at > old_expiry
+    assert client.post("/api/auth/verify-otp", json={"email": PAYLOAD["email"], "otp": "123456"}).status_code == 400
 
 
 @pytest.mark.parametrize("field,value", [("smtp_email", "invalid\naddress"), ("smtp_password", "non-ascii-\u2603")])
@@ -200,3 +198,40 @@ def test_unique_constraint_race_returns_duplicate_error(setup, monkeypatch):
         assert failure.value.detail == "Email already registered"
         assert original_query(User).count() == 1
     smtp.assert_not_called()
+
+
+def test_otp_attempt_limit_and_resend_cooldown(setup, monkeypatch):
+    client, sessions, smtp = setup
+    sender = MagicMock()
+    monkeypatch.setattr(auth, 'send_otp_email', sender)
+    assert register(client).status_code == 201
+    code = sender.call_args.args[1]
+    assert register(client).status_code == 429
+    for _ in range(5):
+        assert client.post('/api/auth/verify-otp', json={'email': PAYLOAD['email'], 'otp': '000000'}).status_code == 400
+    assert client.post('/api/auth/verify-otp', json={'email': PAYLOAD['email'], 'otp': code}).status_code == 429
+    with sessions() as db:
+        user = db.query(User).one()
+        assert not user.email_verified and user.otp_attempts == 5
+
+
+def test_expired_otp_and_query_string_rejected(setup, monkeypatch):
+    client, sessions, smtp = setup
+    sender = MagicMock()
+    monkeypatch.setattr(auth, 'send_otp_email', sender)
+    assert register(client).status_code == 201
+    code = sender.call_args.args[1]
+    with sessions() as db:
+        db.query(User).one().otp_expires_at = datetime.now(timezone.utc)-timedelta(seconds=1)
+        db.commit()
+    assert client.post('/api/auth/verify-otp', json={'email': PAYLOAD['email'], 'otp': code}).status_code == 400
+    assert client.post('/api/auth/verify-otp', params={'email': PAYLOAD['email'], 'otp': code}).status_code == 422
+
+
+def test_new_password_policy_preserves_existing_account_resend(setup):
+    client, sessions, smtp = setup
+    assert register(client, password='short').status_code == 422
+    with sessions() as db:
+        db.add(User(email=PAYLOAD['email'], name='Legacy', password_hash=hash_password('short'), email_verified=False))
+        db.commit()
+    assert register(client, password='short').status_code == 201

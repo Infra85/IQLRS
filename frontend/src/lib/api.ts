@@ -1,5 +1,5 @@
 export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  process.env.NEXT_PUBLIC_API_URL || "";
 
 export type Gate = {
   type: string;
@@ -16,6 +16,7 @@ export type CircuitRequest = {
 };
 
 export type CircuitResult = {
+  simulation_id: string | null;
   counts: Record<string, number>;
   statevector: number[][] | null;
   circuit_diagram: string | null;
@@ -25,7 +26,8 @@ export async function apiFetch(path: string, options?: RequestInit) {
   const { headers, ...rest } = options ?? {};
   const res = await fetch(`${API_URL}${path}`, {
     ...rest,
-    headers: { "Content-Type": "application/json", ...headers },
+    headers: { "Content-Type": "application/json",
+      ...(typeof window !== "undefined" && localStorage.getItem("access_token") ? {Authorization: `Bearer ${localStorage.getItem("access_token")}`} : {}), ...headers },
   });
   if (!res.ok) {
     let message = `API error: ${res.status}`;
