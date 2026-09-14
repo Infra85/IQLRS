@@ -34,3 +34,15 @@ def test_production_rejects_defaults_and_hides_secrets():
     assert 'DO-NOT-PRINT-ME' not in str(failure.value)
     config = Settings(_env_file=None, environment='production', secret_key='test-only-configuration-secret-32-characters', database_url='postgresql://app:example@db/production', smtp_email='sender@example.com', smtp_password='example', openai_api_key='example', cors_origins=['https://learn.example.com'])
     assert config.environment == 'production'
+
+
+def test_cors_origins_accepts_render_comma_separated_value(monkeypatch):
+    monkeypatch.setenv("CORS_ORIGINS", "https://iqlrs.org,https://www.iqlrs.org")
+    config = Settings(_env_file=None)
+    assert config.cors_origins == ["https://iqlrs.org", "https://www.iqlrs.org"]
+
+
+def test_cors_origins_accepts_json_array_value(monkeypatch):
+    monkeypatch.setenv("CORS_ORIGINS", '["https://iqlrs.org","https://www.iqlrs.org"]')
+    config = Settings(_env_file=None)
+    assert config.cors_origins == ["https://iqlrs.org", "https://www.iqlrs.org"]

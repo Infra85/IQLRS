@@ -1,9 +1,11 @@
 """Pydantic settings and app configuration."""
 
 from pathlib import Path
+import json
+from typing import Annotated
 
-from pydantic import Field, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, field_validator, model_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -20,7 +22,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql://postgres:postgres@localhost:5432/quantumlearn"
 
     environment: str = "development"
-    cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000", "http://127.0.0.1:3000"]
     openai_api_key: str = ""
     ai_model: str = "gpt-4.1-mini"
     smtp_host: str = "smtp.gmail.com"
@@ -28,6 +30,25 @@ class Settings(BaseSettings):
     smtp_username: str = ""
     smtp_reply_to: str = ""
     smtp_ssl: bool = False
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, value):
+        """Accept Render's comma-separated env values as well as JSON arrays."""
+        if not isinstance(value, str):
+            return value
+        value = value.strip()
+        if not value:
+            return []
+        if value.startswith("["):
+            try:
+                parsed = json.loads(value)
+            except json.JSONDecodeError as exc:
+                raise ValueError("CORS_ORIGINS must be comma-separated URLs or a JSON array") from exc
+            if not isinstance(parsed, list):
+                raise ValueError("CORS_ORIGINS JSON value must be an array")
+            return parsed
+        return [origin.strip() for origin in value.split(",") if origin.strip()]
 
     @model_validator(mode="after")
     def production_configuration(self):
