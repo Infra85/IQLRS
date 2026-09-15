@@ -6,6 +6,7 @@ import ssl
 from email.message import EmailMessage
 from email.utils import formataddr, formatdate, make_msgid
 
+import httpx
 from pydantic import EmailStr, TypeAdapter, ValidationError
 
 from app.core.config import settings
@@ -18,7 +19,8 @@ class EmailDeliveryError(Exception):
 
 
 def send_otp_email(to_email: str, otp: str):
-    if not settings.smtp_email.strip() or not settings.smtp_password.strip():
+    use_resend = bool(settings.resend_api_key.strip())
+    if not use_resend and (not settings.smtp_email.strip() or not settings.smtp_password.strip()):
         logger.error("Verification email unavailable: SMTP_EMAIL or SMTP_PASSWORD is missing")
         raise EmailDeliveryError(
             "Email verification is not configured. Set SMTP_EMAIL and SMTP_PASSWORD on the backend."
@@ -26,7 +28,8 @@ def send_otp_email(to_email: str, otp: str):
 
     try:
         sender = str(TypeAdapter(EmailStr).validate_python(settings.smtp_email))
-        settings.smtp_password.encode("ascii")
+        if not use_resend:
+            settings.smtp_password.encode("ascii")
     except (ValidationError, UnicodeError):
         logger.error("Verification email unavailable: invalid SMTP configuration")
         raise EmailDeliveryError(
@@ -66,6 +69,30 @@ Regards,
 IQLRS Team
 """
     )
+
+    if use_resend:
+        payload = {
+            "from": message["From"],
+            "to": [to_email],
+            "subject": message["Subject"],
+            "text": message.get_content(),
+        }
+        if message["Reply-To"]:
+            payload["reply_to"] = message["Reply-To"]
+        try:
+            with httpx.Client(timeout=10.0) as client:
+                response = client.post(
+                    "https://api.resend.com/emails",
+                    headers={"Authorization": f"Bearer {settings.resend_api_key}", "Content-Type": "application/json"},
+                    json=payload,
+                )
+                response.raise_for_status()
+            return
+        except httpx.HTTPError:
+            logger.error("Verification email delivery failed: HTTPS provider error")
+            raise EmailDeliveryError(
+                "Verification email could not be sent. Please try again later or contact the administrator."
+            ) from None
 
     try:
         with (smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port, timeout=10, context=ssl.create_default_context())

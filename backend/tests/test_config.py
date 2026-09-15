@@ -32,7 +32,7 @@ def test_production_rejects_defaults_and_hides_secrets():
         Settings(_env_file=None, environment='production', smtp_password='DO-NOT-PRINT-ME')
     assert 'SECRET_KEY' in str(failure.value)
     assert 'DO-NOT-PRINT-ME' not in str(failure.value)
-    config = Settings(_env_file=None, environment='production', secret_key='test-only-configuration-secret-32-characters', database_url='postgresql://app:example@db/production', smtp_email='sender@example.com', smtp_password='example', openai_api_key='example', cors_origins=['https://learn.example.com'])
+    config = Settings(_env_file=None, environment='production', secret_key='test-only-configuration-secret-32-characters', database_url='postgresql://app:example@db/production', smtp_email='sender@example.com', resend_api_key='re_test_key', openai_api_key='example', cors_origins=['https://learn.example.com'])
     assert config.environment == 'production'
 
 

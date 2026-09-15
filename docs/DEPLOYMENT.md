@@ -99,11 +99,11 @@ mix the UUID application with the integer-ID database.
 
 ## Email delivery
 
-`SMTP_EMAIL` is the verified From address; `SMTP_USERNAME` can differ for providers
-that use a separate login. `SMTP_REPLY_TO` is optional and should be a monitored
-support address. Defaults use STARTTLS on Gmail port 587; use `SMTP_SSL=true` with
-port 465 for providers requiring implicit TLS. TLS certificates are verified.
-For Gmail use an app password rather than a normal account password.
+`RESEND_API_KEY` is the backend-only Resend HTTPS API key and `SMTP_EMAIL` is the
+verified From address. Production requires both and uses Resend over HTTPS, so it
+does not depend on Render's blocked outbound SMTP ports. `SMTP_USERNAME`,
+`SMTP_PASSWORD`, and `SMTP_REPLY_TO` remain available for local/development SMTP
+fallback; defaults use STARTTLS on Gmail port 587. TLS certificates are verified.
 
 Messages identify IQLRS, explain the registration request, contain a plain-text
 code and expiry, and include Date, Message-ID, an IQLRS display name, and an
@@ -113,8 +113,8 @@ hash, ten-minute expiry, five failed attempts, a one-minute resend cooldown, and
 shared request limits. Codes and SMTP provider error details are never logged.
 Disable body capture/redact OTP/password fields in any external APM or proxy.
 
-Publish your SMTP provider's SPF and DKIM records for the sending domain, with
-DKIM signing enabled at the provider. Configure DMARC reporting and ensure the
+Publish Resend's SPF and DKIM records for the sending domain, with DKIM signing
+enabled at the provider. Configure DMARC reporting and ensure the
 visible From domain aligns with the authenticated SPF or DKIM domain. Start with
 monitoring while checking legitimate senders, then adopt the appropriate enforced
 policy. Use the provider's exact DNS values; do not publish multiple competing SPF

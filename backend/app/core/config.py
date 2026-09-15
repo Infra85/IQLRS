@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     smtp_username: str = ""
     smtp_reply_to: str = ""
     smtp_ssl: bool = False
+    resend_api_key: str = ""
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -59,8 +60,8 @@ class Settings(BaseSettings):
                 raise ValueError("Production SECRET_KEY must be a random secret of at least 32 characters")
             if not self.database_url.startswith(("postgresql://", "postgresql+psycopg2://")) or "postgres:postgres@" in self.database_url:
                 raise ValueError("Production DATABASE_URL must use PostgreSQL with dedicated credentials")
-            if not self.smtp_email.strip() or not self.smtp_password.strip() or not self.smtp_host.strip():
-                raise ValueError("Production requires SMTP_EMAIL, SMTP_PASSWORD, and SMTP_HOST")
+            if not self.smtp_email.strip() or not self.resend_api_key.strip():
+                raise ValueError("Production requires SMTP_EMAIL and RESEND_API_KEY")
             if not self.cors_origins or any(not o.startswith("https://") or "*" in o or "localhost" in o for o in self.cors_origins):
                 raise ValueError("Production CORS_ORIGINS must contain explicit HTTPS frontend origins")
             if not self.openai_api_key.strip() or not self.ai_model.strip():
