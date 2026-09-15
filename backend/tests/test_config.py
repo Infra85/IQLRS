@@ -25,9 +25,13 @@ def test_env_precedence_and_optional_smtp(tmp_path, monkeypatch):
     assert Settings(_env_file=(root_env, backend_env)).smtp_email == "process@example.com"
 
 
-def test_production_rejects_defaults_and_hides_secrets():
+def test_production_rejects_defaults_and_hides_secrets(monkeypatch):
     import pytest
     from pydantic import ValidationError
+
+    # Isolate model defaults from CI/developer process-level configuration.
+    for key in ("SECRET_KEY", "ENVIRONMENT", "DATABASE_URL", "SMTP_EMAIL", "RESEND_API_KEY", "OPENAI_API_KEY", "CORS_ORIGINS"):
+        monkeypatch.delenv(key, raising=False)
     with pytest.raises(ValidationError) as failure:
         Settings(_env_file=None, environment='production', smtp_password='DO-NOT-PRINT-ME')
     assert 'SECRET_KEY' in str(failure.value)
