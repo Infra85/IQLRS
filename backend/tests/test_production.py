@@ -1,4 +1,3 @@
-from datetime import datetime, timezone, timedelta
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
@@ -23,7 +22,8 @@ def test_simulation_persistence_dashboard_and_isolation(api, sessions):
     with sessions() as db:
         assert db.query(Circuit).count() == db.query(SimulationRun).count() == db.query(SimulationResult).count() == 1
         other = User(email='other@example.com', name='Other', email_verified=True)
-        db.add(other); db.commit()
+        db.add(other)
+        db.commit()
         other_token = create_access_token({'sub': str(other.user_id)})
     assert client.get('/api/circuits/runs/' + response.json()['simulation_id'], headers={'Authorization': 'Bearer '+other_token}).status_code == 404
     assert client.get('/api/dashboard/me', headers={'Authorization': 'Bearer '+other_token}).json()['statistics']['simulations'] == 0
@@ -149,3 +149,29 @@ def test_guest_simulation_stays_available_without_persisting(api, sessions):
     assert response.json()['simulation_id'] is None
     with sessions() as db:
         assert db.query(SimulationRun).count() == 0
+
+
+def test_production_cors_preflight_allows_authenticated_headers():
+    from fastapi import FastAPI
+    from fastapi.middleware.cors import CORSMiddleware
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    cors = next(m for m in app.user_middleware if m.cls is CORSMiddleware)
+    assert cors.kwargs["allow_headers"] == ["Authorization", "Content-Type"]
+    isolated = FastAPI()
+    isolated.add_api_route("/api/circuits/simulate", lambda: {"ok": True}, methods=["POST"])
+    isolated.add_middleware(CORSMiddleware, allow_origins=["https://iqlrs.org"],
+                            allow_credentials=cors.kwargs["allow_credentials"],
+                            allow_methods=cors.kwargs["allow_methods"],
+                            allow_headers=cors.kwargs["allow_headers"])
+    response = TestClient(isolated).options(
+        "/api/circuits/simulate",
+        headers={"Origin": "https://iqlrs.org", "Access-Control-Request-Method": "POST",
+                 "Access-Control-Request-Headers": "authorization,content-type"},
+    )
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "https://iqlrs.org"
+    assert response.headers["access-control-allow-credentials"] == "true"
+    assert "authorization" in response.headers["access-control-allow-headers"].lower()
+    assert "content-type" in response.headers["access-control-allow-headers"].lower()
