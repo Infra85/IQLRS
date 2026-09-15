@@ -45,3 +45,35 @@ def test_resend_failure_is_redacted(monkeypatch, caplog):
 
     assert "re_secret_key" not in caplog.text
     assert "654321" not in caplog.text
+
+
+def test_production_never_uses_smtp(monkeypatch):
+    configured = Settings(_env_file=None, smtp_email="sender@example.com", resend_api_key="")
+    configured.environment = "production"
+    monkeypatch.setattr(email, "settings", configured)
+    smtp = MagicMock(side_effect=AssertionError("SMTP must never be used in production"))
+    monkeypatch.setattr(email.smtplib, "SMTP", smtp)
+
+    with pytest.raises(email.EmailDeliveryError, match="RESEND_API_KEY"):
+        email.send_otp_email("learner@example.com", "123456")
+    smtp.assert_not_called()
+
+
+def test_resend_http_error_is_diagnosable_without_secrets(monkeypatch, caplog):
+    configured = Settings(_env_file=None, smtp_email="sender@example.com", resend_api_key="re_secret_key")
+    monkeypatch.setattr(email, "settings", configured)
+    client = MagicMock()
+    client.return_value.__enter__.return_value = client
+    response = MagicMock(status_code=422)
+    request = httpx.Request("POST", "https://api.resend.com/emails")
+    client.post.return_value.raise_for_status.side_effect = httpx.HTTPStatusError(
+        "provider details re_secret_key", request=request, response=response
+    )
+    monkeypatch.setattr(email.httpx, "Client", client)
+
+    with pytest.raises(email.EmailDeliveryError, match="Verification email could not be sent"):
+        email.send_otp_email("learner@example.com", "987654")
+
+    assert "Resend returned HTTP 422" in caplog.text
+    assert "re_secret_key" not in caplog.text
+    assert "987654" not in caplog.text

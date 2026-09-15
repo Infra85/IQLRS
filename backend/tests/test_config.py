@@ -36,6 +36,22 @@ def test_production_rejects_defaults_and_hides_secrets():
     assert config.environment == 'production'
 
 
+def test_production_requires_resend_api_key():
+    import pytest
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError, match="RESEND_API_KEY"):
+        Settings(
+            _env_file=None,
+            environment="production",
+            secret_key="test-only-configuration-secret-32-characters",
+            database_url="postgresql://app:example@db/production",
+            smtp_email="sender@example.com",
+            openai_api_key="example",
+            cors_origins=["https://iqlrs.org"],
+        )
+
+
 def test_cors_origins_accepts_render_comma_separated_value(monkeypatch):
     monkeypatch.setenv("CORS_ORIGINS", "https://iqlrs.org,https://www.iqlrs.org")
     config = Settings(_env_file=None)

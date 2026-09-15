@@ -19,7 +19,13 @@ class EmailDeliveryError(Exception):
 
 
 def send_otp_email(to_email: str, otp: str):
-    use_resend = bool(settings.resend_api_key.strip())
+    production = settings.environment.strip().lower() == "production"
+    use_resend = production or bool(settings.resend_api_key.strip())
+    if production and not settings.resend_api_key.strip():
+        logger.error("Verification email unavailable: RESEND_API_KEY is missing in production")
+        raise EmailDeliveryError(
+            "Email verification is not configured. Set RESEND_API_KEY on the backend."
+        )
     if not use_resend and (not settings.smtp_email.strip() or not settings.smtp_password.strip()):
         logger.error("Verification email unavailable: SMTP_EMAIL or SMTP_PASSWORD is missing")
         raise EmailDeliveryError(
@@ -88,8 +94,13 @@ IQLRS Team
                 )
                 response.raise_for_status()
             return
-        except httpx.HTTPError:
-            logger.error("Verification email delivery failed: HTTPS provider error")
+        except httpx.HTTPStatusError as exc:
+            logger.error("Verification email delivery failed: Resend returned HTTP %s", exc.response.status_code)
+            raise EmailDeliveryError(
+                "Verification email could not be sent. Please try again later or contact the administrator."
+            ) from None
+        except httpx.RequestError as exc:
+            logger.error("Verification email delivery failed: Resend network error (%s)", type(exc).__name__)
             raise EmailDeliveryError(
                 "Verification email could not be sent. Please try again later or contact the administrator."
             ) from None
