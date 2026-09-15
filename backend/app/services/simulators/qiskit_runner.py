@@ -3,7 +3,7 @@
 Builds a QuantumCircuit from the shared CircuitRequest JSON and runs it on
 Aer when Qiskit is installed and the runtime is compatible. Falls back to
 the pure-Python statevector engine otherwise so /simulate still returns
-real results (Qiskit 2.x currently segfaults on Python 3.14).
+real results (the pinned Qiskit Aer native wheels can segfault on Python 3.12+).
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from app.services.simulators.engine import (
 
 
 def _qiskit_usable() -> bool:
-    if sys.version_info >= (3, 14):
+    if sys.version_info >= (3, 12):
         return False
     try:
         import qiskit  # noqa: F401
