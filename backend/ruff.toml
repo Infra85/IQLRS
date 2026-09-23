@@ -1,0 +1,4 @@
+# Match CI's intended correctness checks, independent of parent-directory configs.
+target-version = "py312"
+[lint]
+select = ["E4", "E7", "E9", "F"]
