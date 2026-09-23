@@ -24,11 +24,21 @@ export type CircuitResult = {
 
 export async function apiFetch(path: string, options?: RequestInit) {
   const { headers, ...rest } = options ?? {};
+  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+  const requestHeaders = new Headers({ "Content-Type": "application/json" });
+  if (token) requestHeaders.set("Authorization", `Bearer ${token}`);
+  new Headers(headers).forEach((value, key) => requestHeaders.set(key, value));
   const res = await fetch(`${API_URL}${path}`, {
     ...rest,
-    headers: { "Content-Type": "application/json",
-      ...(typeof window !== "undefined" && localStorage.getItem("access_token") ? {Authorization: `Bearer ${localStorage.getItem("access_token")}`} : {}), ...headers },
+    headers: requestHeaders,
   });
+  if (res.status === 401 && token && requestHeaders.get("Authorization") === `Bearer ${token}`) {
+    // A pending request must not clear a newer session established by another tab.
+    if (localStorage.getItem("access_token") === token) {
+      localStorage.removeItem("access_token");
+    }
+    throw new Error("Your session has expired or is no longer valid. Please sign in again.");
+  }
   if (!res.ok) {
     let message = `API error: ${res.status}`;
     try {
