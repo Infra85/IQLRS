@@ -1,34 +1,32 @@
-"""Pure-Python statevector simulator for the circuit JSON schema.
+"""Statevector and stochastic-trajectory simulator.
 
-Used as the always-available engine and as a fallback when Qiskit is not
-installed. Little-endian convention matches Qiskit: qubit 0 is the least
-significant bit (rightmost in bitstring labels).
+Little endian: amplitude index i encodes q0 in bit 0. Labels/counts are
+q(n-1)...q0, even though the builder draws q0 at the top. Measurement/reset
+return one conditional pure trajectory, never an ensemble statevector.
 """
 
 from __future__ import annotations
 
+import cmath
 import math
 import random
 from typing import Any
 
-SQRT2_INV = 1.0 / math.sqrt(2.0)
-
-SINGLE_QUBIT_GATES: dict[str, tuple[tuple[complex, complex], tuple[complex, complex]]] = {
+SQRT2_INV = 1 / math.sqrt(2)
+SINGLE_QUBIT_GATES = {
     "I": ((1, 0), (0, 1)),
     "H": ((SQRT2_INV, SQRT2_INV), (SQRT2_INV, -SQRT2_INV)),
     "X": ((0, 1), (1, 0)),
     "Y": ((0, -1j), (1j, 0)),
     "Z": ((1, 0), (0, -1)),
+    "S": ((1, 0), (0, 1j)),
+    "T": ((1, 0), (0, cmath.exp(1j * math.pi / 4))),
+    "SDG": ((1, 0), (0, -1j)),
+    "TDG": ((1, 0), (0, cmath.exp(-1j * math.pi / 4))),
 }
-
-TWO_QUBIT_GATES = {"CNOT"}
-
-GATE_ALIASES = {
-    "CX": "CNOT",
-    "ID": "I",
-    "IDENTITY": "I",
-    "HADAMARD": "H",
-}
+ROTATIONS = {"RX", "RY", "RZ"}
+CONTROLLED = {"CNOT": "X", **{"C" + g: g for g in (*SINGLE_QUBIT_GATES, *ROTATIONS)}}
+GATE_ALIASES = {"CX": "CNOT", "ID": "I", "IDENTITY": "I", "HADAMARD": "H"}
 
 
 def normalize_gate_type(gate_type: str) -> str:
@@ -36,146 +34,245 @@ def normalize_gate_type(gate_type: str) -> str:
     return GATE_ALIASES.get(key, key)
 
 
+def _integer(value, label, low, high):
+    if type(value) is not int or not low <= value <= high:
+        raise ValueError(f"{label} must be an integer between {low} and {high}")
+    return value
+
+
 def validate_and_normalize_gates(circuit_data: dict[str, Any]) -> list[dict[str, Any]]:
-    """Return a list of normalized gate dicts, raising ValueError on bad input."""
-    num_qubits = int(circuit_data["num_qubits"])
-    if num_qubits < 1 or num_qubits > 10:
-        raise ValueError("num_qubits must be between 1 and 10")
-
-    normalized: list[dict[str, Any]] = []
-    for raw in circuit_data.get("gates") or []:
-        gate_type = normalize_gate_type(str(raw.get("type", "")))
-        if not gate_type:
-            raise ValueError("Gate is missing a type")
-
-        if gate_type in SINGLE_QUBIT_GATES:
-            qubit = raw.get("qubit")
-            if qubit is None:
-                raise ValueError(f"{gate_type} gate requires 'qubit'")
-            qubit = int(qubit)
-            if qubit < 0 or qubit >= num_qubits:
-                raise ValueError(f"{gate_type} qubit {qubit} is out of range")
-            normalized.append({"type": gate_type, "qubit": qubit})
-        elif gate_type in TWO_QUBIT_GATES:
-            control = raw.get("control")
-            target = raw.get("target")
-            if control is None or target is None:
-                raise ValueError(f"{gate_type} gate requires 'control' and 'target'")
-            control = int(control)
-            target = int(target)
-            if control < 0 or control >= num_qubits:
-                raise ValueError(f"{gate_type} control {control} is out of range")
-            if target < 0 or target >= num_qubits:
-                raise ValueError(f"{gate_type} target {target} is out of range")
-            if control == target:
-                raise ValueError(f"{gate_type} control and target must differ")
-            normalized.append(
-                {"type": gate_type, "control": control, "target": target}
-            )
-        else:
-            supported = ", ".join(sorted(set(SINGLE_QUBIT_GATES) | TWO_QUBIT_GATES))
+    n = _integer(circuit_data.get("num_qubits"), "num_qubits", 1, 10)
+    raw_gates = circuit_data.get("gates", [])
+    if not isinstance(raw_gates, list) or len(raw_gates) > 500:
+        raise ValueError("gates must be a list of at most 500 operations")
+    normalized = []
+    for raw in raw_gates:
+        if not isinstance(raw, dict) or not isinstance(raw.get("type"), str):
+            raise ValueError("Gate requires a string type")
+        kind = normalize_gate_type(raw["type"])
+        base = CONTROLLED.get(kind, kind)
+        if (
+            base not in SINGLE_QUBIT_GATES
+            and base not in ROTATIONS
+            and kind not in {"SWAP", "MEASURE", "MEASURE_ALL", "RESET"}
+        ):
+            raise ValueError(f"Unsupported gate type '{kind}'")
+        controls = raw.get("controls")
+        if controls is not None and raw.get("control") is not None:
+            raise ValueError("Use control or controls, not both")
+        if controls is None:
+            controls = [raw["control"]] if raw.get("control") is not None else []
+        if not isinstance(controls, list):
+            raise ValueError("controls must be a list")
+        targets = raw.get("targets")
+        legacy = [raw[k] for k in ("qubit", "target") if raw.get(k) is not None]
+        if targets is not None and legacy:
+            raise ValueError("Use targets or qubit/target, not both")
+        if targets is None:
+            targets = legacy
+        if kind == "SWAP" and raw.get("control") is not None:
+            targets = controls + targets  # legacy pair fields accepted by builder
+            controls = []
+        if not isinstance(targets, list):
+            raise ValueError("targets must be a list")
+        if kind == "MEASURE_ALL":
+            if targets:
+                raise ValueError("MEASURE_ALL does not accept targets")
+            targets = list(range(n))
+        required = 2 if kind == "SWAP" else n if kind == "MEASURE_ALL" else 1
+        if len(targets) != required:
+            raise ValueError(f"{kind} requires {required} target qubit(s)")
+        if kind in CONTROLLED and not controls:
+            raise ValueError(f"{kind} requires control qubit(s)")
+        if controls and base not in SINGLE_QUBIT_GATES and base not in ROTATIONS:
+            raise ValueError(f"{kind} cannot have controls")
+        indices = controls + targets
+        for q in indices:
+            _integer(q, f"{kind} qubit index", 0, n - 1)
+        if len(set(indices)) != len(indices):
             raise ValueError(
-                f"Unsupported gate type '{raw.get('type')}'. Supported: {supported}"
+                "Control and target indices must be distinct (no duplicates)"
             )
+        params = raw.get("params")
+        if params is None:
+            params = {}
+        if not isinstance(params, dict):
+            raise ValueError("params must be an object")
+        if base in ROTATIONS:
+            theta = params.get("theta")
+            try:
+                finite = type(theta) in (int, float) and math.isfinite(theta)
+            except OverflowError:
+                finite = False
+            if not finite:
+                raise ValueError(
+                    f"{kind} requires a finite numeric params.theta in radians"
+                )
+            if set(params) != {"theta"}:
+                raise ValueError(f"{kind} only accepts params.theta")
+        elif params:
+            raise ValueError(f"{kind} does not accept parameters")
+        normalized.append(
+            {
+                "type": kind,
+                "base": base,
+                "targets": targets,
+                "controls": controls,
+                "params": params,
+            }
+        )
     return normalized
 
 
-def _apply_single(state: list[complex], qubit: int, matrix) -> list[complex]:
+def gate_matrix(kind, params):
+    if kind in SINGLE_QUBIT_GATES:
+        return SINGLE_QUBIT_GATES[kind]
+    half = params["theta"] / 2
+    c, s = math.cos(half), math.sin(half)
+    if kind == "RX":
+        return ((c, -1j * s), (-1j * s, c))
+    if kind == "RY":
+        return ((c, -s), (s, c))
+    return ((cmath.exp(-1j * half), 0), (0, cmath.exp(1j * half)))
+
+
+def _apply_single(state, qubit, matrix, controls=()):
+    """Apply an arbitrary 2x2 matrix in place, conditional on all controls=1."""
     (a, b), (c, d) = matrix
-    new = [0j] * len(state)
     mask = 1 << qubit
+    control_mask = sum(1 << q for q in controls)
+    for start in range(0, len(state), mask * 2):
+        for i in range(start, start + mask):
+            if i & control_mask != control_mask:
+                continue
+            j = i | mask
+            x, y = state[i], state[j]
+            state[i], state[j] = a * x + b * y, c * x + d * y
+    return state
+
+
+def _measure(state, qubit, rng):
+    mask = 1 << qubit
+    weights = [
+        sum(abs(a) ** 2 for i, a in enumerate(state) if bool(i & mask) == bool(bit))
+        for bit in (0, 1)
+    ]
+    outcome = int(rng.random() * sum(weights) >= weights[0])
+    scale = math.sqrt(weights[outcome])
     for i in range(len(state)):
-        if i & mask:
-            continue
-        j = i | mask
-        amp0 = state[i]
-        amp1 = state[j]
-        new[i] = a * amp0 + b * amp1
-        new[j] = c * amp0 + d * amp1
-    return new
+        state[i] = state[i] / scale if bool(i & mask) == bool(outcome) else 0j
+    return outcome
 
 
-def _apply_cnot(state: list[complex], control: int, target: int) -> list[complex]:
-    new = [0j] * len(state)
-    control_mask = 1 << control
-    target_mask = 1 << target
-    for i, amp in enumerate(state):
-        if amp == 0:
-            continue
-        if i & control_mask:
-            new[i ^ target_mask] += amp
+def _execute(state, operations, rng):
+    measurements = []
+    for index, gate, matrix in operations:
+        kind, targets = gate["type"], gate["targets"]
+        if kind in {"MEASURE", "MEASURE_ALL", "RESET"}:
+            outcomes = {q: _measure(state, q, rng) for q in targets}
+            if kind == "RESET":
+                if outcomes[targets[0]]:
+                    _apply_single(state, targets[0], SINGLE_QUBIT_GATES["X"])
+            else:
+                ordered = sorted(targets, reverse=True)
+                measurements.append(
+                    {
+                        "operation": index,
+                        "qubits": ordered,
+                        "bits": "".join(str(outcomes[q]) for q in ordered),
+                    }
+                )
+        elif kind == "SWAP":
+            a, b = (1 << q for q in targets)
+            for i in range(len(state)):
+                if not i & a and i & b:
+                    j = i ^ a ^ b
+                    state[i], state[j] = state[j], state[i]
         else:
-            new[i] += amp
-    return new
+            _apply_single(state, targets[0], matrix, gate["controls"])
+    return measurements
 
 
-def render_diagram(num_qubits: int, gates: list[dict[str, Any]]) -> str:
-    """Compact ASCII circuit diagram."""
-    if not gates:
-        return "\n".join(f"q{q}: ─" for q in range(num_qubits))
-
-    columns: list[list[str]] = []
+def render_diagram(num_qubits, gates):
+    rows = [f"q{q}: ─" for q in range(num_qubits)]
     for gate in gates:
-        col = ["─────"] * num_qubits
-        if gate["type"] == "CNOT":
-            control = gate["control"]
-            target = gate["target"]
-            lo, hi = min(control, target), max(control, target)
-            for q in range(lo + 1, hi):
-                col[q] = "──│──"
-            col[control] = "──●──"
-            col[target] = "──⊕──"
-        else:
-            label = gate["type"][:3]
-            col[gate["qubit"]] = f"─[{label}]─" if len(label) == 1 else f"[{label}]".center(5, "─")
-        columns.append(col)
-
-    lines = []
-    for q in range(num_qubits):
-        wire = "".join(col[q] for col in columns)
-        lines.append(f"q{q}: ─{wire}─")
-    return "\n".join(lines)
-
-
-def _complex_pairs(state: list[complex]) -> list[list[float]]:
-    return [[float(amp.real), float(amp.imag)] for amp in state]
-
-
-def _sample_counts(state: list[complex], num_qubits: int, shots: int) -> dict[str, int]:
-    weights = [abs(amp) ** 2 for amp in state]
-    total = sum(weights)
-    if total == 0:
-        raise ValueError("Statevector has zero norm")
-    probs = [w / total for w in weights]
-    picks = random.choices(range(len(state)), weights=probs, k=shots)
-    counts: dict[str, int] = {}
-    width = num_qubits
-    for index in picks:
-        key = format(index, f"0{width}b")
-        counts[key] = counts.get(key, 0) + 1
-    return counts
-
-
-def run_statevector(circuit_data: dict[str, Any]) -> dict[str, Any]:
-    num_qubits = int(circuit_data["num_qubits"])
-    shots = int(circuit_data.get("shots") or 1024)
-    if shots < 1:
-        raise ValueError("shots must be at least 1")
-
-    gates = validate_and_normalize_gates(circuit_data)
-    state: list[complex] = [0j] * (1 << num_qubits)
-    state[0] = 1 + 0j
-
-    for gate in gates:
-        if gate["type"] == "CNOT":
-            state = _apply_cnot(state, gate["control"], gate["target"])
-        else:
-            state = _apply_single(
-                state, gate["qubit"], SINGLE_QUBIT_GATES[gate["type"]]
+        label = gate["type"]
+        if gate["params"]:
+            label += f"({gate['params']['theta']:.4g})"
+        width = len(label) + 4
+        for q in range(num_qubits):
+            cell = (
+                "●"
+                if q in gate["controls"]
+                else f"[{label}]"
+                if q in gate["targets"]
+                else ""
             )
+            rows[q] += cell.center(width, "─")
+    return "\n".join(rows)
 
+
+def run_statevector(circuit_data: dict[str, Any], *, rng=None) -> dict[str, Any]:
+    gates = validate_and_normalize_gates(circuit_data)
+    n = circuit_data["num_qubits"]
+    shots = _integer(circuit_data.get("shots", 1024), "shots", 1, 100000)
+    rng = rng if rng is not None else random
+    operations = [
+        (
+            i,
+            g,
+            gate_matrix(g["base"], g["params"])
+            if g["base"] in SINGLE_QUBIT_GATES or g["base"] in ROTATIONS
+            else None,
+        )
+        for i, g in enumerate(gates)
+    ]
+    split = next(
+        (
+            i
+            for i, g in enumerate(gates)
+            if g["type"] in {"MEASURE", "MEASURE_ALL", "RESET"}
+        ),
+        len(gates),
+    )
+    dynamic = split < len(gates)
+    # Bound repeated trajectory work without changing the established qubit limit.
+    if dynamic and shots * (len(gates) - split + 1) * (1 << n) > 20_000_000:
+        raise ValueError(
+            "Circuit exceeds trajectory work limit; reduce shots, qubits, or operations"
+        )
+    prefix = [0j] * (1 << n)
+    prefix[0] = 1 + 0j
+    _execute(prefix, operations[:split], rng)
+    counts, measurements = {}, []
+    measurement_counts = {}
+    state = prefix
+    for _ in range(shots if dynamic else 1):
+        if dynamic:
+            state = prefix.copy()
+            measurements = _execute(state, operations[split:], rng)
+            for record in measurements:
+                bucket = measurement_counts.setdefault(str(record["operation"]), {})
+                bits = record["bits"]
+                bucket[bits] = bucket.get(bits, 0) + 1
+        picks = rng.choices(
+            range(len(state)),
+            weights=[abs(a) ** 2 for a in state],
+            k=1 if dynamic else shots,
+        )
+        for index in picks:
+            bits = format(index, f"0{n}b")
+            counts[bits] = counts.get(bits, 0) + 1
     return {
-        "counts": _sample_counts(state, num_qubits, shots),
-        "statevector": _complex_pairs(state),
-        "circuit_diagram": render_diagram(num_qubits, gates),
+        "counts": counts,
+        "statevector": [[float(a.real), float(a.imag)] for a in state],
+        "circuit_diagram": render_diagram(n, gates),
+        "measurements": measurements,
+        "measurement_counts": measurement_counts,
+        "metadata": {
+            "engine": "statevector-v2",
+            "shots": shots,
+            "statevector_scope": "last_shot" if dynamic else "unitary",
+            "bit_order": "q(n-1)...q0",
+        },
     }

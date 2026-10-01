@@ -42,7 +42,8 @@ def simulate_circuit(circuit: CircuitRequest, user: User | None = Depends(get_op
         db.flush()
         db.add(SimulationResult(simulation_id=run.simulation_id, measurement_counts=result.counts,
                                 probabilities={k: v/circuit.shots for k, v in result.counts.items()},
-                                circuit_diagram=result.circuit_diagram, state_vector={"amplitudes": result.statevector}))
+                                circuit_diagram=result.circuit_diagram, state_vector={"amplitudes": result.statevector, "measurements": result.measurements,
+                                              "measurement_counts": result.measurement_counts, "metadata": result.metadata}))
         result.simulation_id = str(run.simulation_id)
         db.commit()
     except Exception:
