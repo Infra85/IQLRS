@@ -12,6 +12,16 @@ import math
 import random
 from typing import Any
 
+from .classical import (
+    integer as _integer,
+    validate_registers,
+    validate_reference,
+    validate_condition,
+    condition_matches,
+    classical_snapshot,
+    measured_bitstring,
+)
+
 SQRT2_INV = 1 / math.sqrt(2)
 SINGLE_QUBIT_GATES = {
     "I": ((1, 0), (0, 1)),
@@ -34,17 +44,18 @@ def normalize_gate_type(gate_type: str) -> str:
     return GATE_ALIASES.get(key, key)
 
 
-def _integer(value, label, low, high):
-    if type(value) is not int or not low <= value <= high:
-        raise ValueError(f"{label} must be an integer between {low} and {high}")
-    return value
-
-
 def validate_and_normalize_gates(circuit_data: dict[str, Any]) -> list[dict[str, Any]]:
     n = _integer(circuit_data.get("num_qubits"), "num_qubits", 1, 10)
     raw_gates = circuit_data.get("gates", [])
     if not isinstance(raw_gates, list) or len(raw_gates) > 500:
         raise ValueError("gates must be a list of at most 500 operations")
+    registers = validate_registers(circuit_data, n)
+    sizes = {r["name"]: r["size"] for r in registers}
+    classical_mode = circuit_data.get("classical_registers") is not None or any(
+        isinstance(g, dict)
+        and (g.get("destinations") is not None or g.get("condition") is not None)
+        for g in raw_gates
+    )
     normalized = []
     for raw in raw_gates:
         if not isinstance(raw, dict) or not isinstance(raw.get("type"), str):
@@ -82,6 +93,8 @@ def validate_and_normalize_gates(circuit_data: dict[str, Any]) -> list[dict[str,
                 raise ValueError("MEASURE_ALL does not accept targets")
             targets = list(range(n))
         required = 2 if kind == "SWAP" else n if kind == "MEASURE_ALL" else 1
+        if kind == "MEASURE":
+            required = len(targets) if targets else 1
         if len(targets) != required:
             raise ValueError(f"{kind} requires {required} target qubit(s)")
         if kind in CONTROLLED and not controls:
@@ -114,6 +127,29 @@ def validate_and_normalize_gates(circuit_data: dict[str, Any]) -> list[dict[str,
                 raise ValueError(f"{kind} only accepts params.theta")
         elif params:
             raise ValueError(f"{kind} does not accept parameters")
+        destinations = raw.get("destinations")
+        measuring = kind in {"MEASURE", "MEASURE_ALL"}
+        if measuring:
+            if destinations is None:
+                if classical_mode:
+                    raise ValueError(f"{kind} requires classical destinations")
+                destinations = [{"register": "c", "bit": q} for q in targets]
+            if not isinstance(destinations, list) or len(destinations) != len(targets):
+                raise ValueError(
+                    "Measurement requires one classical destination per target"
+                )
+            destinations = [validate_reference(ref, sizes) for ref in destinations]
+            if len({(r["register"], r["bit"]) for r in destinations}) != len(
+                destinations
+            ):
+                raise ValueError(
+                    "Duplicate classical destinations in one measurement are prohibited"
+                )
+        elif destinations is not None:
+            raise ValueError(
+                "Only measurement operations accept classical destinations"
+            )
+        condition = validate_condition(raw.get("condition"), sizes)
         normalized.append(
             {
                 "type": kind,
@@ -121,6 +157,9 @@ def validate_and_normalize_gates(circuit_data: dict[str, Any]) -> list[dict[str,
                 "targets": targets,
                 "controls": controls,
                 "params": params,
+                "destinations": destinations,
+                "condition": condition,
+                "classical_mode": classical_mode,
             }
         )
     return normalized
@@ -165,9 +204,11 @@ def _measure(state, qubit, rng):
     return outcome
 
 
-def _execute(state, operations, rng):
+def _execute(state, operations, rng, classical, written):
     measurements = []
     for index, gate, matrix in operations:
+        if not condition_matches(gate["condition"], classical):
+            continue
         kind, targets = gate["type"], gate["targets"]
         if kind in {"MEASURE", "MEASURE_ALL", "RESET"}:
             outcomes = {q: _measure(state, q, rng) for q in targets}
@@ -175,14 +216,20 @@ def _execute(state, operations, rng):
                 if outcomes[targets[0]]:
                     _apply_single(state, targets[0], SINGLE_QUBIT_GATES["X"])
             else:
+                mapping = dict(zip(targets, gate["destinations"]))
+                for q, destination in mapping.items():
+                    name, bit = destination["register"], destination["bit"]
+                    classical[name][bit] = outcomes[q]
+                    written.add((name, bit))
                 ordered = sorted(targets, reverse=True)
-                measurements.append(
-                    {
-                        "operation": index,
-                        "qubits": ordered,
-                        "bits": "".join(str(outcomes[q]) for q in ordered),
-                    }
-                )
+                record = {
+                    "operation": index,
+                    "qubits": ordered,
+                    "bits": "".join(str(outcomes[q]) for q in ordered),
+                }
+                if gate["classical_mode"]:
+                    record["destinations"] = [mapping[q] for q in ordered]
+                measurements.append(record)
         elif kind == "SWAP":
             a, b = (1 << q for q in targets)
             for i in range(len(state)):
@@ -200,6 +247,16 @@ def render_diagram(num_qubits, gates):
         label = gate["type"]
         if gate["params"]:
             label += f"({gate['params']['theta']:.4g})"
+        if gate["classical_mode"] and gate["destinations"]:
+            label += " -> " + ",".join(
+                f"{r['register']}[{r['bit']}]" for r in gate["destinations"]
+            )
+        if gate["condition"]:
+            cond = gate["condition"]
+            ref = cond["register"] + (
+                f"[{cond['bit']}]" if cond["bit"] is not None else ""
+            )
+            label += f" IF {ref} == {cond['value']}"
         width = len(label) + 4
         for q in range(num_qubits):
             cell = (
@@ -213,11 +270,51 @@ def render_diagram(num_qubits, gates):
     return "\n".join(rows)
 
 
+def _terminal_readout(state, n, rng):
+    # Preserve the exposed pre-readout state, using the same collapse primitive.
+    measured = state.copy()
+    outcomes = [_measure(measured, q, rng) for q in range(n)]
+    return "".join(str(bit) for bit in reversed(outcomes))
+
+
 def run_statevector(circuit_data: dict[str, Any], *, rng=None) -> dict[str, Any]:
     gates = validate_and_normalize_gates(circuit_data)
     n = circuit_data["num_qubits"]
     shots = _integer(circuit_data.get("shots", 1024), "shots", 1, 100000)
-    rng = rng if rng is not None else random
+    limit = _integer(
+        circuit_data.get("shot_record_limit", 0), "shot_record_limit", 0, 256
+    )
+    seed = circuit_data.get("seed")
+    if seed is not None:
+        _integer(seed, "seed", 0, (1 << 63) - 1)
+    rng = rng if rng is not None else random.Random(seed)
+    registers = validate_registers(circuit_data, n)
+    measured = {
+        (r["register"], r["bit"]) for g in gates for r in (g["destinations"] or [])
+    }
+    order = [
+        {"register": r["name"], "bit": bit}
+        for r in registers
+        for bit in reversed(range(r["size"]))
+        if (r["name"], bit) in measured
+    ]
+    classical_mode = any(g["classical_mode"] for g in gates)
+    classical_counts_mode = classical_mode and bool(order)
+    # Every shot executes the full sequence. Bound both work and returned history.
+    cost = sum(
+        len(g["targets"]) if g["type"] in {"MEASURE", "MEASURE_ALL"} else 1
+        for g in gates
+    )
+    cost += 1 if classical_counts_mode else n + 1
+    if shots * cost * (1 << n) > 20_000_000:
+        raise ValueError(
+            "Circuit exceeds trajectory work limit; reduce shots, qubits, or operations"
+        )
+    history_size = sum(len(g["targets"]) for g in gates if g["destinations"])
+    if min(limit, shots) * history_size > 20000:
+        raise ValueError(
+            "Shot history exceeds 20000 measurement values; reduce shot_record_limit"
+        )
     operations = [
         (
             i,
@@ -228,51 +325,65 @@ def run_statevector(circuit_data: dict[str, Any], *, rng=None) -> dict[str, Any]
         )
         for i, g in enumerate(gates)
     ]
-    split = next(
-        (
-            i
-            for i, g in enumerate(gates)
-            if g["type"] in {"MEASURE", "MEASURE_ALL", "RESET"}
-        ),
-        len(gates),
-    )
-    dynamic = split < len(gates)
-    # Bound repeated trajectory work without changing the established qubit limit.
-    if dynamic and shots * (len(gates) - split + 1) * (1 << n) > 20_000_000:
-        raise ValueError(
-            "Circuit exceeds trajectory work limit; reduce shots, qubits, or operations"
+    counts, measurement_counts, classical_counts, shot_results = {}, {}, {}, []
+    for shot in range(shots):
+        state = [0j] * (1 << n)
+        state[0] = 1 + 0j
+        classical = {r["name"]: [0] * r["size"] for r in registers}
+        written = set()
+        measurements = _execute(state, operations, rng, classical, written)
+        for record in measurements:
+            bucket = measurement_counts.setdefault(str(record["operation"]), {})
+            bits = record["bits"]
+            bucket[bits] = bucket.get(bits, 0) + 1
+        classical_bits = measured_bitstring(classical, written, order)
+        if order:
+            classical_counts[classical_bits] = (
+                classical_counts.get(classical_bits, 0) + 1
+            )
+        outcome = (
+            classical_bits
+            if classical_counts_mode
+            else _terminal_readout(state, n, rng)
         )
-    prefix = [0j] * (1 << n)
-    prefix[0] = 1 + 0j
-    _execute(prefix, operations[:split], rng)
-    counts, measurements = {}, []
-    measurement_counts = {}
-    state = prefix
-    for _ in range(shots if dynamic else 1):
-        if dynamic:
-            state = prefix.copy()
-            measurements = _execute(state, operations[split:], rng)
+        counts[outcome] = counts.get(outcome, 0) + 1
+        if shot < limit:
+            # Histories always include destination mappings, including implicit legacy c.
+            history = []
             for record in measurements:
-                bucket = measurement_counts.setdefault(str(record["operation"]), {})
-                bits = record["bits"]
-                bucket[bits] = bucket.get(bits, 0) + 1
-        picks = rng.choices(
-            range(len(state)),
-            weights=[abs(a) ** 2 for a in state],
-            k=1 if dynamic else shots,
-        )
-        for index in picks:
-            bits = format(index, f"0{n}b")
-            counts[bits] = counts.get(bits, 0) + 1
+                gate = gates[record["operation"]]
+                mapping = dict(zip(gate["targets"], gate["destinations"]))
+                history.append(
+                    {**record, "destinations": [mapping[q] for q in record["qubits"]]}
+                )
+            shot_results.append(
+                {
+                    "shot": shot + 1,
+                    "outcome": outcome,
+                    "classical": classical_snapshot(classical),
+                    "measurements": history,
+                }
+            )
+    dynamic = any(g["type"] in {"MEASURE", "MEASURE_ALL", "RESET"} for g in gates)
     return {
         "counts": counts,
         "statevector": [[float(a.real), float(a.imag)] for a in state],
         "circuit_diagram": render_diagram(n, gates),
         "measurements": measurements,
         "measurement_counts": measurement_counts,
+        "classical_registers": registers,
+        "classical_bit_order": order,
+        "classical_counts": classical_counts,
+        "last_classical": classical_snapshot(classical),
+        "shot_results": shot_results,
         "metadata": {
             "engine": "statevector-v2",
+            "execution_version": 2,
             "shots": shots,
+            "seed": seed,
+            "counts_kind": "classical" if classical_counts_mode else "quantum",
+            "shot_records_returned": len(shot_results),
+            "shot_records_truncated": len(shot_results) < shots,
             "statevector_scope": "last_shot" if dynamic else "unitary",
             "bit_order": "q(n-1)...q0",
         },
