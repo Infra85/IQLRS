@@ -13,7 +13,7 @@ v.2- For instructure, researchers: High end simulation available, for complex co
 - **Interactive Learning Modules** — Structured content covering quantum computing fundamentals through advanced algorithms
 - **Visual Circuit Builder** — Drag-and-drop quantum circuit design
 - **Code Editor (unreleased)** — Source retained; execution is not exposed
-- **Circuit Simulator** — Real-time simulation with multiple backends
+- **Circuit Simulator** — Statevector simulation with parameterized/controlled gates, measurement, and reset ([Simulator V2](docs/SIMULATOR_V2.md))
 - **State Visualization** — Bloch spheres, probability distributions, state vectors
 - **AI Tutor** — Concept explanations, error detection, optimization suggestions
 - **Assessments** — Quizzes, coding challenges, and progress tracking
@@ -30,7 +30,7 @@ v.2- For instructure, researchers: High end simulation available, for complex co
 | Circuit Builder | React Flow |
 | Code Editor | Monaco Editor |
 | Backend | FastAPI (Python) |
-| Quantum Engines | Qiskit, PennyLane, Cirq |
+| Circuit Engine | Shared Python statevector engine (legacy `qiskit` API name) |
 | AI | Claude / OpenAI API |
 | Database | PostgreSQL |
 
