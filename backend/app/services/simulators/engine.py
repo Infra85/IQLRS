@@ -70,6 +70,8 @@ def validate_and_normalize_gates(circuit_data: dict[str, Any]) -> list[dict[str,
             raise ValueError("Use targets or qubit/target, not both")
         if targets is None:
             targets = legacy
+        if not isinstance(targets, list):
+            raise ValueError("targets must be a list")
         if kind == "SWAP" and raw.get("control") is not None:
             targets = controls + targets  # legacy pair fields accepted by builder
             controls = []
@@ -153,10 +155,9 @@ def _apply_single(state, qubit, matrix, controls=()):
 
 def _measure(state, qubit, rng):
     mask = 1 << qubit
-    weights = [
-        sum(abs(a) ** 2 for i, a in enumerate(state) if bool(i & mask) == bool(bit))
-        for bit in (0, 1)
-    ]
+    weights = [0.0, 0.0]
+    for i, amplitude in enumerate(state):
+        weights[bool(i & mask)] += abs(amplitude) ** 2
     outcome = int(rng.random() * sum(weights) >= weights[0])
     scale = math.sqrt(weights[outcome])
     for i in range(len(state)):

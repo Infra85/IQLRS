@@ -336,3 +336,24 @@ def test_unitary_and_stochastic_guest_paths(api):
         )
         assert response.status_code == 200
         assert response.json()["simulation_id"] is None
+
+
+@pytest.mark.parametrize("targets", [1, "0", False])
+def test_malformed_swap_targets_are_validation_errors(targets):
+    with pytest.raises(ValueError, match="targets must be a list"):
+        run([dict(type="SWAP", control=0, targets=targets)], 2)
+
+
+def test_multiple_controls_parameterized_gate():
+    for basis in range(8):
+        state, _ = run(
+            [g("X", q) for q in range(3) if basis & (1 << q)]
+            + [
+                dict(type="RX", controls=[2, 0], targets=[1], params={"theta": math.pi})
+            ],
+            3,
+        )
+        active = basis & 5 == 5
+        assert state[basis ^ 2 if active else basis] == pytest.approx(
+            -1j if active else 1
+        )
