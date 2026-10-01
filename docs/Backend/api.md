@@ -4,7 +4,8 @@
 #### `POST /api/circuits/simulate`
 
 See [Simulator V2](../SIMULATOR_V2.md) for additional gates, numeric parameters,
-controls/targets arrays, measurement/reset semantics, and additive result fields.
+controls/targets arrays, classical registers, measurement destinations, conditions,
+seeded per-shot execution, and additive result fields.
 Simulate a quantum circuit.
 
 **Request:**
