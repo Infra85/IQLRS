@@ -22,6 +22,8 @@ from .classical import (
     measured_bitstring,
 )
 
+from .tracing import validate_debug, TraceRecorder, condition_event, debug_result
+
 SQRT2_INV = 1 / math.sqrt(2)
 SINGLE_QUBIT_GATES = {
     "I": ((1, 0), (0, 1)),
@@ -192,26 +194,49 @@ def _apply_single(state, qubit, matrix, controls=()):
     return state
 
 
-def _measure(state, qubit, rng):
+def _measure(state, qubit, rng, samples=None, destination=None):
     mask = 1 << qubit
     weights = [0.0, 0.0]
     for i, amplitude in enumerate(state):
         weights[bool(i & mask)] += abs(amplitude) ** 2
     outcome = int(rng.random() * sum(weights) >= weights[0])
+    if samples is not None:
+        total = sum(weights)
+        samples.append(
+            {
+                "qubit": qubit,
+                "destination": destination,
+                "outcome": outcome,
+                "probabilities_before": [w / total for w in weights],
+            }
+        )
     scale = math.sqrt(weights[outcome])
     for i in range(len(state)):
         state[i] = state[i] / scale if bool(i & mask) == bool(outcome) else 0j
     return outcome
 
 
-def _execute(state, operations, rng, classical, written):
+def _execute(state, operations, rng, classical, written, trace=None):
     measurements = []
     for index, gate, matrix in operations:
-        if not condition_matches(gate["condition"], classical):
+        capture = trace is not None and index in trace.plan.operations
+        matched = condition_matches(gate["condition"], classical)
+        evaluation = condition_event(gate, classical, matched) if capture else None
+        if not matched:
+            if capture:
+                trace.operation(index, gate, state, classical, False, evaluation, None)
             continue
+        samples = [] if capture else None
         kind, targets = gate["type"], gate["targets"]
         if kind in {"MEASURE", "MEASURE_ALL", "RESET"}:
-            outcomes = {q: _measure(state, q, rng) for q in targets}
+            if capture:
+                destinations = gate["destinations"] or [None] * len(targets)
+                outcomes = {
+                    q: _measure(state, q, rng, samples, destination)
+                    for q, destination in zip(targets, destinations)
+                }
+            else:
+                outcomes = {q: _measure(state, q, rng) for q in targets}
             if kind == "RESET":
                 if outcomes[targets[0]]:
                     _apply_single(state, targets[0], SINGLE_QUBIT_GATES["X"])
@@ -238,6 +263,8 @@ def _execute(state, operations, rng, classical, written):
                     state[i], state[j] = state[j], state[i]
         else:
             _apply_single(state, targets[0], matrix, gate["controls"])
+        if capture:
+            trace.operation(index, gate, state, classical, True, evaluation, samples)
     return measurements
 
 
@@ -287,6 +314,7 @@ def run_statevector(circuit_data: dict[str, Any], *, rng=None) -> dict[str, Any]
     seed = circuit_data.get("seed")
     if seed is not None:
         _integer(seed, "seed", 0, (1 << 63) - 1)
+    plan = validate_debug(circuit_data.get("debug"), shots, gates, n)
     rng = rng if rng is not None else random.Random(seed)
     registers = validate_registers(circuit_data, n)
     measured = {
@@ -326,12 +354,21 @@ def run_statevector(circuit_data: dict[str, Any], *, rng=None) -> dict[str, Any]
         for i, g in enumerate(gates)
     ]
     counts, measurement_counts, classical_counts, shot_results = {}, {}, {}, []
+    traces = [] if plan else None
     for shot in range(shots):
         state = [0j] * (1 << n)
         state[0] = 1 + 0j
         classical = {r["name"]: [0] * r["size"] for r in registers}
         written = set()
-        measurements = _execute(state, operations, rng, classical, written)
+        trace = (
+            TraceRecorder(plan, state, classical)
+            if plan and shot + 1 in plan.shots
+            else None
+        )
+        if trace is None:
+            measurements = _execute(state, operations, rng, classical, written)
+        else:
+            measurements = _execute(state, operations, rng, classical, written, trace)
         for record in measurements:
             bucket = measurement_counts.setdefault(str(record["operation"]), {})
             bits = record["bits"]
@@ -347,6 +384,9 @@ def run_statevector(circuit_data: dict[str, Any], *, rng=None) -> dict[str, Any]
             else _terminal_readout(state, n, rng)
         )
         counts[outcome] = counts.get(outcome, 0) + 1
+        if trace is not None:
+            trace.record("end", None, state, classical, outcome=outcome)
+            traces.append({"shot": shot + 1, "checkpoints": trace.checkpoints})
         if shot < limit:
             # Histories always include destination mappings, including implicit legacy c.
             history = []
@@ -365,7 +405,7 @@ def run_statevector(circuit_data: dict[str, Any], *, rng=None) -> dict[str, Any]
                 }
             )
     dynamic = any(g["type"] in {"MEASURE", "MEASURE_ALL", "RESET"} for g in gates)
-    return {
+    result = {
         "counts": counts,
         "statevector": [[float(a.real), float(a.imag)] for a in state],
         "circuit_diagram": render_diagram(n, gates),
@@ -388,3 +428,6 @@ def run_statevector(circuit_data: dict[str, Any], *, rng=None) -> dict[str, Any]
             "bit_order": "q(n-1)...q0",
         },
     }
+    if plan is not None:
+        result["debug"] = debug_result(plan, gates, traces, n)
+    return result
