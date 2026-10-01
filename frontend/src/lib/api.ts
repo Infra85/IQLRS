@@ -1,3 +1,5 @@
+import type { DebugRequest, DebugResult } from "./simulation-trace";
+
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -27,9 +29,11 @@ export type CircuitRequest = {
   classical_registers?: ClassicalRegister[];
   seed?: number;
   shot_record_limit?: number;
+  debug?: DebugRequest;
 };
 
 export type CircuitResult = {
+  debug?: DebugResult | null;
   simulation_id: string | null;
   counts: Record<string, number>;
   statevector: number[][] | null;
