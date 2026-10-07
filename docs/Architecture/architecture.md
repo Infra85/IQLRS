@@ -1,6 +1,14 @@
 # Architecture
 
-## Overview
+## Current curriculum path
+
+The eight-module source is `backend/data/modules.json`. The curriculum service validates it and the existing migration seeds JSON text into `LearningModule.content`, using unchanged UUID5 identifiers. An exact-content fingerprint permits upgrading the previous unmodified publisher bundle; custom rows and learner activity are retained. Metadata needs no schema change.
+
+Lesson pages render the generated `frontend/src/app/learn/modules.ts`, not a database fetch. Run `node frontend/scripts/sync-curriculum.cjs` after source edits; frontend tests enforce equality with server scoring data. Quiz submissions use `/api/progress/lessons/{number}/quiz`; personal progress uses `/api/progress/me`. Planned experiment/challenge metadata has no runtime in this phase. See [the scientific review](../CURRICULUM_SCIENTIFIC_REVIEW.md) for deployment and compatibility details.
+
+The remaining diagram and subsystem list below describe the original design, not current implemented capability. The current engine is documented in [Simulator V2](../SIMULATOR_V2.md); Code Lab and collaboration are unreleased.
+
+## Original design overview
 
 Quantum Learn is a monorepo with two main services:
 

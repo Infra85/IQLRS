@@ -1,0 +1,19 @@
+# Curriculum authoring guidelines
+
+`backend/data/modules.json` is the canonical eight-lesson bundle. Preserve integer module IDs and the UUID5 namespaces in `app/services/curriculum.py`. Keep the legacy render fields alongside structured metadata. After editing, run `node frontend/scripts/sync-curriculum.cjs`; commit the generated TypeScript with the JSON. Frontend parity and generation checks reject drift. The generated copy keeps frontend-only Docker builds independent of backend files.
+
+Start with an accessible reason to learn a concept, then a precise explanation, useful mathematics, a prediction and a worked observation. Objectives must describe actions a learner can demonstrate. Every quiz option must be reviewed semantically: schema validation cannot prove that only one answer is defensible. Explanations must justify the answer, not repeat its letter.
+
+Use normalized pure states unless another scope is explicit. Use `|ψ⟩`, `|+⟩`, `|−⟩`, `|Φ±⟩`, `|Ψ±⟩`, amplitudes α and β, and Born probabilities `P(x)=|αₓ|²`. Global phase is irrelevant; relative phase may change interference. Superposition depends on basis. Tensor products build subsystem spaces; general pure states need not factor. Mixed states are not generally single state vectors.
+
+Use `|q(n−1)…q0⟩` for IQLRS basis strings. Label registers and destinations before writing any correction table or measured bitstring. A two-bit register displays `c1c0`. A conceptual oracle `|x,y⟩` labels logical registers; its order is not automatically the physical wire order. Define its mapping explicitly.
+
+Describe projective measurement as a probabilistic outcome with a conditional state update. “Collapse” is a model term, not a claim about an experimentally settled interpretation. Measuring a basis eigenstate need not alter it. Explain entangled correlations separately from local statistics and no-signalling. Neither entanglement nor teleportation allows controllable faster-than-light communication.
+
+Name the promise, oracle, error model, input size and marked-item assumptions in algorithm claims. Distinguish query count, gate count, oracle construction and practical runtime. Do not attribute Shor’s entire advantage to QFT alone or claim a classical lower bound that is not known. Derive convention-sensitive examples and verify them using the existing engine; do not change simulator semantics to match a lesson.
+
+Keep ideal predictions separate from finite-shot fluctuations and hardware noise. A builder link is not proof of an algorithm implementation. Experiment and challenge descriptors remain `status: planned`; do not attach execution or scoring APIs in this phase. Module 8 activities are conceptual and require no builder. Existing Bell/Grover builder challenges remain existing capabilities, independent of these planned descriptors.
+
+Metadata uses integer prerequisite module IDs, matching the existing bundle. Dependencies must form a DAG. `estimatedMinutes` includes reading, working through mathematics, the quiz and time reserved for the planned activity; it is an editorial estimate, not measured learner telemetry. `mathematicalLevel` describes the notation used, not a prerequisite degree. Modules 2–8 introduce linear-algebra notation with explanations; Module 8 also introduces modular arithmetic. Activity assessment indices are zero-based positions in the current lesson quiz, not database question IDs; maintain them whenever questions change.
+
+References should identify authoritative sources with stable HTTPS URLs. Verify substantive corrections against those sources and record derivations, intentional simplifications and evidence in [the scientific review](CURRICULUM_SCIENTIFIC_REVIEW.md). Do not put known false claims in live lessons except as clearly explained distractors. The archived v1 test fixture intentionally retains historical errors solely to test safe upgrades.

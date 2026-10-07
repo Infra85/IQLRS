@@ -1,0 +1,42 @@
+{
+  "1": {
+    "sha256": "34da6c043c27ca5bcc4267e886bdc6bf2f5f3a63ed0fe46b4fff9e6d961e171c",
+    "title": "Module 1 \u2013 Qubits & Quantum States",
+    "questionCount": 3
+  },
+  "2": {
+    "sha256": "23c99b35438c43c565c0a2de53943b600b2775214cb0f4ad84f49db97f598e08",
+    "title": "Module 2 \u2013 Superposition",
+    "questionCount": 3
+  },
+  "3": {
+    "sha256": "e1e89c0dcfc82b2f4abe9d76b733ee3e1d512c58adbf4b1439ccf6fb8a8e1d8e",
+    "title": "Module 3 \u2013 Measurement",
+    "questionCount": 3
+  },
+  "4": {
+    "sha256": "4a89eec4e66fa1ec240eb0a323b28f667734f53c00cce45d2d8a904e6d4d3a34",
+    "title": "Module 4 \u2013 Entanglement & Bell States",
+    "questionCount": 3
+  },
+  "5": {
+    "sha256": "e861276e783d36a022d086bc0944fed97ca4a901d1fbcf97ac104ed42f788d11",
+    "title": "Module 5 \u2013 Deutsch\u2011Jozsa Algorithm",
+    "questionCount": 3
+  },
+  "6": {
+    "sha256": "90a424ca712da74914681766c93ba071346a92ed69f6afffb294cc9a2065df5c",
+    "title": "Module 6 \u2013 Grover's Search",
+    "questionCount": 3
+  },
+  "7": {
+    "sha256": "97062727466485fe59b7f175c9f7d50b94752cba4c619006f783a7c1efd15e79",
+    "title": "Module 7 \u2013 Quantum Teleportation",
+    "questionCount": 3
+  },
+  "8": {
+    "sha256": "bc5f702d8c2c029abd5ca39b61ef571fac7436553f3af2a406441d60025606da",
+    "title": "Module 8 \u2013 Shor's Algorithm Overview",
+    "questionCount": 3
+  }
+}

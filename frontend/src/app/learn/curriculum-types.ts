@@ -1,0 +1,44 @@
+export type Question = {
+  question: string;
+  options: string[];
+  answerIndex: number;
+  explanation: string;
+};
+export type Section = { title: string; description: string; diagram: string };
+export type Difficulty = 'beginner' | 'intermediate' | 'advanced';
+export type Activity = {
+  id: string;
+  moduleId: number;
+  title: string;
+  type: 'circuit' | 'conceptual';
+  concept: string;
+  description: string;
+  objective: string;
+  learnerAction: string;
+  expectedResult: string;
+  difficulty: Difficulty;
+  requiresBuilder: boolean;
+  status: 'planned';
+  assessmentQuestionIndices: number[];
+};
+export type Module = {
+  id: number;
+  title: string;
+  objectives: string;
+  introduction: string;
+  sections: Section[];
+  workedExample: string;
+  keyTakeaways: string;
+  questions: Question[];
+  tryInBuilder: boolean;
+  builderLink?: string;
+  curriculumVersion: number;
+  difficulty: Difficulty;
+  estimatedMinutes: number;
+  prerequisites: number[];
+  learningObjectives: string[];
+  mathematicalLevel: 'none' | 'basic' | 'linear-algebra';
+  references: { title: string; url: string }[];
+  experiments: Activity[];
+  challenges: Activity[];
+};

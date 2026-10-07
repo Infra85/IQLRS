@@ -12,19 +12,21 @@ v.2- For instructure, researchers: High end simulation available, for complex co
 
 ## Features v.1
 
-- **Interactive Learning Modules** — Structured content covering quantum computing fundamentals through advanced algorithms
+- **Eight Learning Modules** — Reviewed lessons and quizzes from qubits through a conceptual Shor overview; experiment/challenge descriptors are planned content, not a new interactive runtime
 - **Visual Circuit Builder** — Drag-and-drop quantum circuit design
 - **Code Editor (unreleased)** — Source retained; execution is not exposed
 - **Circuit Simulator** — Sequential shot simulation with parameterized/controlled gates, classical registers, conditional execution, measurement, reset, and bounded execution inspection ([Simulator V2](docs/SIMULATOR_V2.md))
 - **Real hardware execution (optional)** — Discover QPUs, validate circuits, confirm paid submissions, monitor persistent jobs, and compare measured counts with local simulation. No silent simulator fallback.
 - **State Visualization** — Bloch spheres, probability distributions, state vectors
 - **AI Tutor** — Concept explanations, error detection, optimization suggestions
-- **Assessments** — Quizzes, coding challenges, and progress tracking
+- **Assessments** — Lesson quizzes and persisted progress; Code Lab and curriculum challenge execution are unreleased
 - **Dashboard** — Persisted learner activity; instructor analytics is unreleased
 
 ## Features v.2
 
 - More freedom for quantum simulation.
+See the [curriculum scientific review](docs/CURRICULUM_SCIENTIFIC_REVIEW.md) for conventions, sources, validation and safe upgrades. Full Shor and arbitrary oracle generation are not implemented.
+
 ## Tech Stack
 
 | Layer | Technology |

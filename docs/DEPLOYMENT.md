@@ -79,6 +79,13 @@ UUID tables, widens OTP hashes, creates shared request counters, and seeds the
 bundled curriculum using stable UUIDs. It never runs implicitly on application
 startup. Run it once as a release job before accepting traffic.
 
+Curriculum Phase 1 also upgrades exact, unmodified previous bundled lessons during
+this transaction. SHA-256 fingerprints and ownership/metadata checks protect custom
+rows; skipped customized modules produce warnings for manual review. Stable IDs,
+progress and historical attempt scores are retained. No schema migration or database
+rebuild is needed. Deploy the matching generated frontend curriculum; see the
+[curriculum review](CURRICULUM_SCIENTIFIC_REVIEW.md#data-flow-compatibility-and-deployment).
+
 For the original integer-ID schema it copies records into the UUID models with
 deterministic primary/foreign-key mappings. Password hashes and verified flags
 are preserved. Original tables, including columns absent from the new models,
