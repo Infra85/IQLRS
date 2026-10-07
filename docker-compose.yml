@@ -27,7 +27,11 @@ services:
         condition: service_started
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      args:
+        HARDWARE_IBM: ${HARDWARE_IBM:-false}
+        HARDWARE_BRAKET: ${HARDWARE_BRAKET:-false}
     restart: unless-stopped
     env_file: .env
     environment:

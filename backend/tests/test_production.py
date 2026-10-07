@@ -158,7 +158,7 @@ def test_production_cors_preflight_allows_authenticated_headers():
     from app.main import app
 
     cors = next(m for m in app.user_middleware if m.cls is CORSMiddleware)
-    assert cors.kwargs["allow_headers"] == ["Authorization", "Content-Type"]
+    assert cors.kwargs["allow_headers"] == ["Authorization", "Content-Type", "Idempotency-Key"]
     isolated = FastAPI()
     isolated.add_api_route("/api/circuits/simulate", lambda: {"ok": True}, methods=["POST"])
     isolated.add_middleware(CORSMiddleware, allow_origins=["https://iqlrs.org"],

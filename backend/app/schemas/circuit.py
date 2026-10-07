@@ -100,6 +100,7 @@ class DebugResult(BaseModel):
 
 
 class CircuitRequest(BaseModel):
+    execution_mode: Literal["LOCAL_SIMULATION"] = "LOCAL_SIMULATION"
     gates: list[Gate] = Field(max_length=500)
     num_qubits: StrictInt = Field(ge=1, le=10)
     shots: StrictInt = Field(default=1024, ge=1, le=100000)
@@ -113,6 +114,7 @@ class CircuitRequest(BaseModel):
 
 
 class CircuitResult(BaseModel):
+    execution_mode: Literal["LOCAL_SIMULATION"] = "LOCAL_SIMULATION"
     debug: DebugResult | None = None
     simulation_id: str | None = None
     counts: dict[str, int]

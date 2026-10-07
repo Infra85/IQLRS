@@ -69,6 +69,16 @@ class Settings(BaseSettings):
         return self
 
 
+    hardware_execution_enabled: bool = False
+    hardware_max_shots: int = Field(default=1024, ge=1, le=100000)
+    hardware_max_jobs_per_user_per_day: int = Field(default=5, ge=1)
+    hardware_max_shots_per_user_per_day: int = Field(default=4096, ge=1)
+    ibm_quantum_token: str = Field(default="", repr=False)
+    ibm_quantum_instance: str = ""
+    braket_region: str = ""
+    braket_s3_bucket: str = ""
+    braket_s3_prefix: str = "iqlrs-hardware"
+
     # Speech credentials stay on the backend. Provider/model/voice are operator settings.
     tts_provider: str = "openai"
     tts_model: str = "gpt-4o-mini-tts"
