@@ -32,7 +32,12 @@ def simulate_circuit(circuit: CircuitRequest, user: User | None = Depends(get_op
     if user is None:
         return result
     try:
-        saved = Circuit(user_id=user.user_id, name="Circuit experiment", num_qubits=circuit.num_qubits, framework=backend, circuit_data=circuit.model_dump())
+        classical_size = sum(r.size for r in result.classical_registers) if (
+            circuit.classical_registers is not None
+            or any(g.destinations is not None or g.condition is not None for g in circuit.gates)
+        ) else 0
+        saved = Circuit(user_id=user.user_id, name="Circuit experiment", num_qubits=circuit.num_qubits,
+                        num_classical_bits=classical_size, framework=backend, circuit_data=circuit.model_dump())
         db.add(saved)
         db.flush()
         db.add(CircuitVersion(circuit_id=saved.circuit_id, created_by=user.user_id, version_number=1, circuit_data=circuit.model_dump()))
@@ -43,7 +48,8 @@ def simulate_circuit(circuit: CircuitRequest, user: User | None = Depends(get_op
         db.add(SimulationResult(simulation_id=run.simulation_id, measurement_counts=result.counts,
                                 probabilities={k: v/circuit.shots for k, v in result.counts.items()},
                                 circuit_diagram=result.circuit_diagram, state_vector={"amplitudes": result.statevector, "measurements": result.measurements,
-                                              "measurement_counts": result.measurement_counts, "metadata": result.metadata}))
+                                              "measurement_counts": result.measurement_counts, "metadata": result.metadata,
+                                              **result.model_dump(include={"classical_registers", "classical_bit_order", "classical_counts", "last_classical", "shot_results"})}))
         result.simulation_id = str(run.simulation_id)
         db.commit()
     except Exception:

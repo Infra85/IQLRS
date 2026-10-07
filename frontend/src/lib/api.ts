@@ -1,8 +1,16 @@
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "";
 
+export type ClassicalRegister = { name: string; size: number };
+export type ClassicalBit = { register: string; bit: number };
+export type ClassicalCondition = { register: string; bit?: number | null; operator: "eq"; value: number };
+export type MeasurementRecord = { operation: number; qubits: number[]; bits: string; destinations?: ClassicalBit[] };
+export type ShotResult = { shot: number; outcome: string; classical: Record<string, string>; measurements: MeasurementRecord[] };
+
 export type Gate = {
   type: string;
+  destinations?: ClassicalBit[];
+  condition?: ClassicalCondition;
   qubit?: number | null;
   control?: number | null;
   target?: number | null;
@@ -16,6 +24,9 @@ export type CircuitRequest = {
   num_qubits: number;
   shots?: number;
   backend?: string;
+  classical_registers?: ClassicalRegister[];
+  seed?: number;
+  shot_record_limit?: number;
 };
 
 export type CircuitResult = {
@@ -23,9 +34,14 @@ export type CircuitResult = {
   counts: Record<string, number>;
   statevector: number[][] | null;
   circuit_diagram: string | null;
-  measurements?: { operation: number; qubits: number[]; bits: string }[];
+  measurements?: MeasurementRecord[];
   measurement_counts?: Record<string, Record<string, number>>;
-  metadata?: { statevector_scope: string; bit_order: string; shots: number };
+  metadata?: { statevector_scope: string; bit_order: string; shots: number; counts_kind?: "quantum" | "classical"; shot_records_truncated?: boolean; seed?: number | null };
+  classical_registers?: ClassicalRegister[];
+  classical_bit_order?: ClassicalBit[];
+  classical_counts?: Record<string, number>;
+  last_classical?: Record<string, string>;
+  shot_results?: ShotResult[];
 };
 
 export async function apiFetch(path: string, options?: RequestInit) {

@@ -23,9 +23,12 @@ import {
   type GateDragSource,
   type GateDropTarget,
 } from "./edit-circuit";
+import { ClassicalControls } from "./ClassicalControls";
+import { ClassicalResults } from "./ClassicalResults";
+import { withDefaultDestinations, validateClassicalCircuit, conditionLabel, referenceLabel } from "./classical-circuit";
 import { useGateDrag } from "./use-gate-drag";
 import { useSearchParams } from "next/navigation";
-import { simulateCircuit, type CircuitResult, type Gate } from "@/lib/api";
+import { simulateCircuit, type CircuitResult, type Gate, type ClassicalRegister } from "@/lib/api";
 
 
 const CHALLENGES = {
@@ -102,6 +105,10 @@ export default function CircuitBuilder() {
       ? CHALLENGES[challengeKey]
       : undefined;
   const [numQubits, setNumQubits] = useState(2);
+  const [registers, setRegisters] = useState<ClassicalRegister[] | undefined>(undefined);
+  const [seedInput, setSeedInput] = useState("");
+  const [recordShots, setRecordShots] = useState(false);
+  const [recordLimit, setRecordLimit] = useState(20);
   const [shots, setShots] = useState(1024);
   const [gates, setGates] = useState<Gate[]>([]);
   const [selected, setSelected] = useState<PaletteGate | null>("H");
@@ -137,6 +144,40 @@ export default function CircuitBuilder() {
     return () => window.clearTimeout(timer);
   }, [placedColumn, gates]);
 
+  function configuredGate(type: string, qubit: number, control?: number, theta?: number) {
+    return withDefaultDestinations(makeGate(type, qubit, control, theta), registers, numQubits);
+  }
+
+  function updateRegisters(next: ClassicalRegister[] | undefined) {
+    setRegisters(next);
+    if (!registers && next) setGates(current => current.map(g => withDefaultDestinations(g, next, numQubits)));
+    setResult(null);
+    setError(null);
+  }
+
+  function renameRegister(index: number, name: string) {
+    if (!registers) return;
+    if (!/^[A-Za-z][A-Za-z0-9_]{0,31}$/.test(name) || registers.some((r, i) => i !== index && r.name === name)) {
+      setError("Choose a unique register name beginning with a letter, using letters, digits or underscores.");
+      return;
+    }
+    setError(null);
+    const oldName = registers[index].name;
+    setRegisters(registers.map((r, i) => i === index ? { ...r, name } : r));
+    setGates(current => current.map(g => ({ ...g,
+      ...(g.destinations ? { destinations: g.destinations.map(d => d.register === oldName ? { ...d, register: name } : d) } : {}),
+      ...(g.condition?.register === oldName ? { condition: { ...g.condition, register: name } } : {}),
+    })));
+    setResult(null);
+  }
+
+  function updateOperation(index: number, gate: Gate) {
+    setGates(current => current.map((g, i) => i === index ? gate : g));
+    setResult(null);
+    setChallengeStatus(null);
+    setError(null);
+  }
+
   function handleDrop(source: GateDragSource, target: GateDropTarget) {
     if (loading) return;
     if (isLinked(source.type) && source.index === undefined) {
@@ -162,7 +203,7 @@ export default function CircuitBuilder() {
       source.index !== undefined && source.index < target.column
         ? target.column - 1
         : target.column;
-    setGates(next);
+    setGates(next.map(g => withDefaultDestinations(g, registers, numQubits)));
     setResult(null);
     setError(null);
     setChallengeStatus(null);
@@ -222,7 +263,7 @@ export default function CircuitBuilder() {
           (value): value is number => value !== undefined && value !== null,
         );
         return indices.every((index) => index < clamped);
-      }),
+      }).map(g => g.type === "MEASURE_ALL" && g.destinations ? { ...g, destinations: g.destinations.slice(0, clamped) } : g),
     );
     setCnotControl(null);
     setCnotColumn(null);
@@ -249,7 +290,7 @@ export default function CircuitBuilder() {
       const column = cnotColumn ?? gates.length;
       setGates((current) => {
         const next = [...current];
-        next.splice(column, 0, makeGate(selected, qubit, cnotControl, theta));
+        next.splice(column, 0, configuredGate(selected, qubit, cnotControl, theta));
         return next;
       });
       setPlacedColumn(column);
@@ -259,7 +300,7 @@ export default function CircuitBuilder() {
       setChallengeStatus(null);
       return;
     }
-    setGates((current) => [...current, makeGate(selected, qubit, undefined, theta)]);
+    setGates((current) => [...current, configuredGate(selected, qubit, undefined, theta)]);
     setPlacedColumn(gates.length);
     setResult(null);
     setChallengeStatus(null);
@@ -296,11 +337,18 @@ export default function CircuitBuilder() {
     setError(null);
     try {
       validateCircuit(gates, numQubits);
+      validateClassicalCircuit(gates, registers, numQubits);
+      const seed = seedInput.trim() ? Number(seedInput) : undefined;
+      if (seed !== undefined && (!Number.isSafeInteger(seed) || seed < 0)) throw new Error("Seed must be a non-negative safe integer, or blank for random runs.");
+      if (recordShots && (!Number.isInteger(recordLimit) || recordLimit < 1 || recordLimit > 256)) throw new Error("Request between 1 and 256 shot records.");
       const data = await simulateCircuit({
         gates,
         num_qubits: numQubits,
         shots,
         backend: "qiskit",
+        classical_registers: registers,
+        seed,
+        shot_record_limit: recordShots ? recordLimit : 0,
       });
       setResult(data);
       setResultShots(shots);
@@ -356,7 +404,7 @@ export default function CircuitBuilder() {
         .slice(0, 8)
         .map(
           ([bits, count]) =>
-            `State |${bits}⟩ occurred ${count} times, or ${((100 * count) / resultShots).toFixed(1)} percent.`,
+            `${result.metadata?.counts_kind === "classical" ? `Classical result ${bits}` : `State |${bits}⟩`} occurred ${count} times, or ${((100 * count) / resultShots).toFixed(1)} percent.`,
         )
         .join(
           " ",
@@ -482,6 +530,19 @@ export default function CircuitBuilder() {
           </label>
         </section>
 
+        <section className="panel p-5 flex flex-wrap gap-4 items-end" aria-label="Shot execution options">
+          <label className="text-sm">Random seed (optional)
+            <Input aria-label="Random seed (optional)" value={seedInput} onChange={e => setSeedInput(e.target.value)} placeholder="Random each run" />
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={recordShots} onChange={e => setRecordShots(e.target.checked)} />
+            Include shot history
+          </label>
+          {recordShots && <label className="text-sm">Shot records (maximum 256)
+            <Input aria-label="Shot records" className="w-24" type="number" min={1} max={256} value={Number.isNaN(recordLimit) ? "" : recordLimit} onChange={e => setRecordLimit(e.target.valueAsNumber)} />
+          </label>}
+        </section>
+
         <section id="gate-instructions" className="panel p-6">
           <div className="flex justify-between gap-3 mb-5">
             <h2 className="section-title">Gate library</h2>
@@ -544,6 +605,9 @@ export default function CircuitBuilder() {
             ]}
           />
         </section>
+
+        <ClassicalControls registers={registers} gates={gates} numQubits={numQubits}
+          onRegisters={updateRegisters} onRename={renameRegister} onGate={updateOperation} />
 
         <section
           ref={stageRef}
@@ -622,7 +686,7 @@ export default function CircuitBuilder() {
             <h2 className="section-title">Measurement counts</h2>
             <p className="technical mt-2">
               {resultShots.toLocaleString()} shots / bars relative to largest
-              count · final computational-basis sampling
+              count · {result.metadata?.counts_kind === "classical" ? "final measured classical bits" : "final computational-basis sampling"}
             </p>
             <ul className="result-list mt-4 space-y-3">
               {Object.entries(result.counts)
@@ -633,7 +697,7 @@ export default function CircuitBuilder() {
                     className="flex items-center gap-3 text-sm"
                   >
                     <span className="shrink-0 font-mono text-xs sm:text-sm text-slate-300">
-                      |{bitstring}⟩
+                      {result.metadata?.counts_kind === "classical" ? bitstring : `|${bitstring}⟩`}
                     </span>
                     <div className="h-3 flex-1 overflow-hidden rounded bg-surface-raised">
                       <div
@@ -677,10 +741,11 @@ export default function CircuitBuilder() {
             )}
           </div>
 
+          {(registers || !!result.shot_results?.length) && <ClassicalResults result={result} />}
           {!!result.measurements?.length && <div className="panel p-5 lg:col-span-2">
             <h2 className="section-title">Explicit measurements</h2>
             {result.measurements.map(m => <div key={m.operation} className="mt-3 text-sm">
-              <p>Operation {m.operation + 1} · qubits {m.qubits.map(q => `q${q}`).join(", ")} · last shot: {m.bits}</p>
+              <p>Operation {m.operation + 1} · qubits {m.qubits.map(q => `q${q}`).join(", ")} · last shot: {m.bits}{m.destinations ? ` → ${m.destinations.map(referenceLabel).join(", ")}` : ""}</p>
               <p>Counts across shots: {Object.entries(result.measurement_counts?.[String(m.operation)] ?? {}).map(([bits, count]) => `${bits}: ${count}`).join(" · ")}</p>
             </div>)}
           </div>}
@@ -859,6 +924,7 @@ function GateCell({
         title={`Remove ${gate.type}${gate.params ? `(${gate.params.theta})` : ""}`}
         className="circuit-cell draggable-gate relative flex h-12 min-w-[3.5rem] items-center justify-center"
       >
+        {gate.condition && <span className="absolute -top-3 text-[9px] border-b border-dashed" title={conditionLabel(gate)} aria-label={conditionLabel(gate)}>IF</span>}
         <span className="absolute inset-x-0 top-1/2 h-px bg-slate-600" />
         <span
           className={`absolute w-px bg-quantum-300 ${qubit === Math.min(gate.control!, gate.target!) ? "top-1/2 -bottom-2" : "-top-2 bottom-1/2"}`}
@@ -885,6 +951,7 @@ function GateCell({
       title={`Remove ${gate.type}${gate.params ? `(${gate.params.theta})` : ""}`}
       className="circuit-cell draggable-gate relative flex h-12 min-w-[3.5rem] items-center justify-center"
     >
+      {gate.condition && <span className="absolute -top-3 text-[9px] border-b border-dashed" title={conditionLabel(gate)} aria-label={conditionLabel(gate)}>IF</span>}
       <span className="absolute inset-x-0 top-1/2 h-px bg-slate-600" />
       <span
         className={`relative z-10 flex h-9 w-9 items-center justify-center rounded-md border font-mono text-sm font-bold ${
