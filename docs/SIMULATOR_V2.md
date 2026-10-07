@@ -1,4 +1,4 @@
-# Simulator V2 — Phase 2
+# Simulator V2 — Phase 3
 
 The circuit builder sends ordered `Gate[]` JSON through `simulateCircuit` to
 `POST /api/circuits/simulate`. Pydantic checks payload shape; the engine validates
@@ -228,14 +228,62 @@ is rendered, and no shot records are returned by default.
 - Conditions support equality only. No classical arithmetic, boolean expressions,
   loops, arbitrary initial states, noise models, density matrices, symbolic
   parameter binding, alternative runtimes or hardware execution.
-- Only one final quantum trajectory is returned, never all per-shot statevectors.
+- Normal results expose only the last quantum trajectory. Opt-in debugging can
+  return a stricter bounded subset of selected-shot checkpoints.
 - The builder offers single quantum controls and per-qubit/measure-all mapping.
   Multiple quantum controls, inverse phase gates, and arbitrary grouped measurement
   targets remain available through the API.
 
-See [Phase 2 engineering report](SIMULATOR_V2_PHASE2_REPORT.md) for verification
-results and the next scope justified by this implementation. The [Phase 1
-report](SIMULATOR_V2_PHASE1_REPORT.md) is preserved as a historical record.
+See [Phase 3 engineering report](SIMULATOR_V2_PHASE3_REPORT.md) for the debug
+schema, limits, verification results, and next scope. The [Phase 2
+report](SIMULATOR_V2_PHASE2_REPORT.md) and [Phase 1
+report](SIMULATOR_V2_PHASE1_REPORT.md) remain historical records.
+
+## Bounded execution inspection
+
+Opt into tracing on the existing simulation request:
+
+```json
+"debug": {
+  "enabled": true,
+  "shot_numbers": [1, 2],
+  "checkpoint_mode": "all",
+  "include_statevector": false
+}
+```
+
+Shot numbers are **one-based**, matching Phase 2 histories. The default selected
+shot is 1. `checkpoint_mode: "selected"` requires unique zero-based
+`operation_indices`; measurement, reset, and conditional operations are always
+included alongside that selection. Every trace includes start and end checkpoints.
+The builder labels operations one-based and converts its input to API indices.
+
+The additive `debug` response contains a versioned operation registry and selected
+shot trajectories. Checkpoints contain basis probabilities, classical memory,
+executed/skipped status, condition evaluations, and actual measurement/reset
+samples with probabilities before each sample. Optional amplitude snapshots retain
+phase. The existing executor produces these observations without changing RNG
+consumption. Ordinary API responses return `debug: null`.
+
+A checkpoint is the state of **that shot immediately after the operation**, never
+an average over shots. Start shows initialization. End preserves the circuit state
+before any implicit terminal readout, matching the existing final-state contract;
+its `outcome` records the resulting histogram key. Multi-target sample probabilities
+are conditional on preceding samples within the same operation.
+
+Hard bounds: 16 selected shots; 256 checkpoints per shot; 512 checkpoints total;
+32,768 basis probability values total; 64 amplitude snapshots if requested; and
+2,000,000 bytes of compact serialized debug JSON. Start/end count toward all
+snapshot budgets. Requests exceeding structural bounds are rejected before shots
+execute. The serialized-size guard rejects oversized results before persistence.
+The independent Phase 2 limit of 256 returned shot histories is unchanged.
+
+Enable **Debug execution** before running. The result inspector selects a returned
+shot, steps backward/forward, highlights its circuit operation, and shows a timeline
+including skipped conditions. Classical conditions and quantum controls have
+separate labels. Quantum rows use the existing result presentation, paginated at
+32 basis states. Traces are transient response metadata and are not saved in
+simulation history; debug request settings can remain in saved circuit JSON.
 
 ## Verification commands
 
@@ -270,6 +318,7 @@ PORT=13002 npm run start
 npm install --prefix /tmp/iqlrs-browser-check playwright
 NODE_PATH=/tmp/iqlrs-browser-check/node_modules node frontend/tests/browser/simulator-v2.cjs
 NODE_PATH=/tmp/iqlrs-browser-check/node_modules node frontend/tests/browser/simulator-v2-phase2.cjs
+NODE_PATH=/tmp/iqlrs-browser-check/node_modules node frontend/tests/browser/simulator-v2-phase3.cjs
 ```
 
 Browser overrides: `CHROME_PATH` selects the Chrome executable, `BUILDER_URL`

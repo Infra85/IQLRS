@@ -23,6 +23,10 @@ import {
   type GateDragSource,
   type GateDropTarget,
 } from "./edit-circuit";
+import { DebugControls } from "./DebugControls";
+import { ExecutionTrace } from "./ExecutionTrace";
+import { QuantumStateTable } from "./QuantumStateTable";
+import { initialDebugSettings, makeDebugRequest } from "@/lib/simulation-trace";
 import { ClassicalControls } from "./ClassicalControls";
 import { ClassicalResults } from "./ClassicalResults";
 import { withDefaultDestinations, validateClassicalCircuit, conditionLabel, referenceLabel } from "./classical-circuit";
@@ -85,13 +89,6 @@ const GATE_STYLES: Record<string, string> = Object.fromEntries(
   PALETTE.map((gate) => [gate, "instrument-gate"]),
 );
 
-function formatAmplitude(pair: number[]): string {
-  const [re, im] = pair;
-  const rePart = re.toFixed(3);
-  const imPart = `${im >= 0 ? "+" : "-"}${Math.abs(im).toFixed(3)}i`;
-  return `${rePart} ${imPart}`;
-}
-
 function probability(pair: number[]): number {
   return pair[0] * pair[0] + pair[1] * pair[1];
 }
@@ -104,6 +101,8 @@ export default function CircuitBuilder() {
     challengeKey && Object.hasOwn(CHALLENGES, challengeKey)
       ? CHALLENGES[challengeKey]
       : undefined;
+  const [debugSettings, setDebugSettings] = useState(initialDebugSettings);
+  const [inspectedOperation, setInspectedOperation] = useState<number | null>(null);
   const [numQubits, setNumQubits] = useState(2);
   const [registers, setRegisters] = useState<ClassicalRegister[] | undefined>(undefined);
   const [seedInput, setSeedInput] = useState("");
@@ -349,6 +348,7 @@ export default function CircuitBuilder() {
         classical_registers: registers,
         seed,
         shot_record_limit: recordShots ? recordLimit : 0,
+        debug: makeDebugRequest(debugSettings, shots, gates, numQubits),
       });
       setResult(data);
       setResultShots(shots);
@@ -543,6 +543,8 @@ export default function CircuitBuilder() {
           </label>}
         </section>
 
+        <DebugControls settings={debugSettings} onChange={setDebugSettings} />
+
         <section id="gate-instructions" className="panel p-6">
           <div className="flex justify-between gap-3 mb-5">
             <h2 className="section-title">Gate library</h2>
@@ -627,7 +629,7 @@ export default function CircuitBuilder() {
                 qubit={qubit}
                 gates={gates}
                 cnotControl={cnotControl}
-                executionStep={executionStep}
+                executionStep={loading ? executionStep : result?.debug ? inspectedOperation ?? -1 : -1}
                 placedColumn={placedColumn}
                 bindDrag={dragging.bind}
                 onMoveKey={moveByKeyboard}
@@ -718,22 +720,7 @@ export default function CircuitBuilder() {
             <p className="technical mt-2">Amplitude / exact probability · q(n−1)…q0</p>
             {result.metadata?.statevector_scope === "last_shot" && <p className="mt-2 text-sm text-amber-200">Conditional state from the last shot, after measurement/reset. Counts aggregate all shots.</p>}
             {result.statevector ? (
-              <ul className="result-list mt-4 space-y-2 font-mono text-xs text-slate-300">
-                {result.statevector.map((pair, index) => (
-                  <li
-                    key={index}
-                    className="flex flex-wrap justify-between gap-x-4 gap-y-1 border-b border-white/5 py-1"
-                  >
-                    <span>|{index.toString(2).padStart(numQubits, "0")}⟩</span>
-                    <span>
-                      {formatAmplitude(pair)}{" "}
-                      <span className="text-slate-400">
-                        p={probability(pair).toFixed(3)}
-                      </span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <QuantumStateTable label="Final quantum state" numQubits={numQubits} probabilities={result.statevector.map(probability)} statevector={result.statevector} />
             ) : (
               <p className="mt-3 text-sm text-slate-400">
                 No statevector returned.
@@ -741,6 +728,7 @@ export default function CircuitBuilder() {
             )}
           </div>
 
+          {result.debug && <ExecutionTrace debug={result.debug} onOperation={setInspectedOperation} />}
           {(registers || !!result.shot_results?.length) && <ClassicalResults result={result} />}
           {!!result.measurements?.length && <div className="panel p-5 lg:col-span-2">
             <h2 className="section-title">Explicit measurements</h2>

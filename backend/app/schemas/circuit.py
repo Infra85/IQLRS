@@ -1,4 +1,6 @@
-from pydantic import BaseModel, Field, StrictInt, StrictFloat, ConfigDict
+from typing import Literal
+
+from pydantic import BaseModel, Field, StrictInt, StrictFloat, StrictBool, ConfigDict
 
 
 class ClassicalRegister(BaseModel):
@@ -34,11 +36,75 @@ class Gate(BaseModel):
     params: dict[str, StrictInt | StrictFloat] | None = None
 
 
+class DebugRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    enabled: StrictBool = False
+    shot_numbers: list[StrictInt] = Field(
+        default_factory=lambda: [1], min_length=1, max_length=16
+    )
+    checkpoint_mode: Literal["all", "selected"] = "all"
+    operation_indices: list[StrictInt] | None = Field(default=None, max_length=254)
+    include_statevector: StrictBool = False
+
+
+class QuantumCheckpoint(BaseModel):
+    probabilities: list[float]
+    statevector: list[list[float]] | None = None
+
+
+class ConditionEvaluation(BaseModel):
+    actual: int
+    expected: int
+    matched: bool
+
+
+class MeasurementSample(BaseModel):
+    qubit: int
+    destination: ClassicalBit | None = None
+    outcome: int
+    probabilities_before: list[float]
+
+
+class ExecutionCheckpoint(BaseModel):
+    kind: Literal["start", "end", "operation", "measurement", "condition", "reset"]
+    operation_index: int | None = None
+    executed: bool | None = None
+    quantum: QuantumCheckpoint
+    classical: dict[str, str]
+    condition: ConditionEvaluation | None = None
+    samples: list[MeasurementSample] = Field(default_factory=list)
+    outcome: str | None = None
+
+
+class TraceOperation(BaseModel):
+    type: str
+    targets: list[int]
+    controls: list[int]
+    params: dict[str, float | int]
+    condition: ClassicalCondition | None = None
+    destinations: list[ClassicalBit] | None = None
+
+
+class ShotTrace(BaseModel):
+    shot: int
+    checkpoints: list[ExecutionCheckpoint]
+
+
+class DebugResult(BaseModel):
+    version: Literal[1]
+    num_qubits: int
+    shot_numbering: Literal["one_based"]
+    operation_indexing: Literal["zero_based"]
+    operations: dict[str, TraceOperation]
+    traces: list[ShotTrace]
+
+
 class CircuitRequest(BaseModel):
     gates: list[Gate] = Field(max_length=500)
     num_qubits: StrictInt = Field(ge=1, le=10)
     shots: StrictInt = Field(default=1024, ge=1, le=100000)
     backend: str = "qiskit"
+    debug: DebugRequest | None = None
     classical_registers: list[ClassicalRegister] | None = Field(
         default=None, min_length=1, max_length=8
     )
@@ -47,6 +113,7 @@ class CircuitRequest(BaseModel):
 
 
 class CircuitResult(BaseModel):
+    debug: DebugResult | None = None
     simulation_id: str | None = None
     counts: dict[str, int]
     statevector: list[list[float]] | None = None
