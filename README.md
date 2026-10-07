@@ -4,6 +4,8 @@ AI-Based Interactive Quantum Algorithm Learning Platform.
 
 Learn, build, simulate, and visualize quantum algorithms with AI-powered guidance.
 
+IQLRS supports local quantum simulation and optional real quantum hardware execution through IBM Quantum and Amazon Braket QPU adapters. Hardware requires operator-installed SDKs, configured accounts, and an explicit feature flag; it is disabled by default. Adapter and workflow tests run without credentials. Live QPU execution has not been verified in this development environment. See the [Phase 4 operator and engineering report](docs/SIMULATOR_V2_PHASE4_REPORT.md).
+
 v.1- For student: Simulation only avaliable according to the learning module.
 
 v.2- For instructure, researchers: High end simulation available, for complex computing, through code.
@@ -14,6 +16,7 @@ v.2- For instructure, researchers: High end simulation available, for complex co
 - **Visual Circuit Builder** — Drag-and-drop quantum circuit design
 - **Code Editor (unreleased)** — Source retained; execution is not exposed
 - **Circuit Simulator** — Sequential shot simulation with parameterized/controlled gates, classical registers, conditional execution, measurement, reset, and bounded execution inspection ([Simulator V2](docs/SIMULATOR_V2.md))
+- **Real hardware execution (optional)** — Discover QPUs, validate circuits, confirm paid submissions, monitor persistent jobs, and compare measured counts with local simulation. No silent simulator fallback.
 - **State Visualization** — Bloch spheres, probability distributions, state vectors
 - **AI Tutor** — Concept explanations, error detection, optimization suggestions
 - **Assessments** — Quizzes, coding challenges, and progress tracking
