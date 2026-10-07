@@ -22,6 +22,7 @@ export type Gate = {
 };
 
 export type CircuitRequest = {
+  execution_mode?: "LOCAL_SIMULATION" | "HARDWARE";
   gates: Gate[];
   num_qubits: number;
   shots?: number;
@@ -33,6 +34,7 @@ export type CircuitRequest = {
 };
 
 export type CircuitResult = {
+  execution_mode?: "LOCAL_SIMULATION";
   debug?: DebugResult | null;
   simulation_id: string | null;
   counts: Record<string, number>;

@@ -23,6 +23,7 @@ import {
   type GateDragSource,
   type GateDropTarget,
 } from "./edit-circuit";
+import { HardwareExecution } from "./HardwareExecution";
 import { DebugControls } from "./DebugControls";
 import { ExecutionTrace } from "./ExecutionTrace";
 import { QuantumStateTable } from "./QuantumStateTable";
@@ -101,6 +102,7 @@ export default function CircuitBuilder() {
     challengeKey && Object.hasOwn(CHALLENGES, challengeKey)
       ? CHALLENGES[challengeKey]
       : undefined;
+  const [executionMode, setExecutionMode] = useState("local");
   const [debugSettings, setDebugSettings] = useState(initialDebugSettings);
   const [inspectedOperation, setInspectedOperation] = useState<number | null>(null);
   const [numQubits, setNumQubits] = useState(2);
@@ -530,7 +532,7 @@ export default function CircuitBuilder() {
           </label>
         </section>
 
-        <section className="panel p-5 flex flex-wrap gap-4 items-end" aria-label="Shot execution options">
+        {executionMode === "local" && <section className="panel p-5 flex flex-wrap gap-4 items-end" aria-label="Shot execution options">
           <label className="text-sm">Random seed (optional)
             <Input aria-label="Random seed (optional)" value={seedInput} onChange={e => setSeedInput(e.target.value)} placeholder="Random each run" />
           </label>
@@ -541,9 +543,9 @@ export default function CircuitBuilder() {
           {recordShots && <label className="text-sm">Shot records (maximum 256)
             <Input aria-label="Shot records" className="w-24" type="number" min={1} max={256} value={Number.isNaN(recordLimit) ? "" : recordLimit} onChange={e => setRecordLimit(e.target.valueAsNumber)} />
           </label>}
-        </section>
+        </section>}
 
-        <DebugControls settings={debugSettings} onChange={setDebugSettings} />
+        {executionMode === "local" && <DebugControls settings={debugSettings} onChange={setDebugSettings} />}
 
         <section id="gate-instructions" className="panel p-6">
           <div className="flex justify-between gap-3 mb-5">
@@ -629,7 +631,7 @@ export default function CircuitBuilder() {
                 qubit={qubit}
                 gates={gates}
                 cnotControl={cnotControl}
-                executionStep={loading ? executionStep : result?.debug ? inspectedOperation ?? -1 : -1}
+                executionStep={loading ? executionStep : executionMode === "local" && result?.debug ? inspectedOperation ?? -1 : -1}
                 placedColumn={placedColumn}
                 bindDrag={dragging.bind}
                 onMoveKey={moveByKeyboard}
@@ -640,30 +642,31 @@ export default function CircuitBuilder() {
           </div>
         </section>
       </fieldset>
+      <HardwareExecution circuit={{ gates, num_qubits: numQubits, shots, classical_registers: registers }} mode={executionMode} onMode={setExecutionMode} />
       <div className="flex flex-wrap items-center gap-3">
-        <Button onClick={onSimulate} disabled={loading}>
+        {executionMode === "local" && <Button onClick={onSimulate} disabled={loading}>
           {loading ? "Simulating…" : "Run simulation"}
-        </Button>
+        </Button>}
         <Button variant="secondary" disabled={loading} onClick={clearCircuit}>
           Clear circuit
         </Button>
         <span role="status" className="technical">
           {loading
             ? "Executing circuit…"
-            : result
+            : executionMode === "local" && result
               ? "Execution complete"
-              : "Ready to simulate"}
+              : executionMode === "local" ? "Ready to simulate" : "Hardware execution selected"}
         </span>
       </div>
 
       {error && <Status kind="error">{error}</Status>}
-      {!result && !loading && !error && (
+      {executionMode === "local" && !result && !loading && !error && (
         <EmptyState
           title="Your results will appear here."
           description="Run the circuit to inspect measurement counts, amplitudes, and state probabilities. An empty circuit measures the initial all-zero state."
         />
       )}
-      {result && (
+      {executionMode === "local" && result && (
         <section className="grid gap-6 lg:grid-cols-2">
           <div id="result-interpretation" className="panel p-5 lg:col-span-2">
             <p className="text-sm text-slate-400 mb-4">{result.simulation_id ? "Saved to your account. View your activity in My progress." : "Guest simulation — sign in before running to save results and track progress."}</p>

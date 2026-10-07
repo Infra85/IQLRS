@@ -67,6 +67,7 @@ from app.models.rate_limit import RateLimit
 
 __all__ = [
     "RateLimit",
+    "HardwareJob",
     "User",
     "Role",
     "UserRole",
@@ -109,3 +110,5 @@ __all__ = [
     "ContributionMember",
     "SharedResource",
 ]
+
+from app.models.hardware import HardwareJob

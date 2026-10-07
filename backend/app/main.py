@@ -5,7 +5,7 @@ from app.core.database import get_db
 from app.core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import circuits, ai, auth, progress, speech
+from app.api import circuits, ai, auth, progress, speech, hardware
 from app.api.dashboard import router as dashboard_router
 
 app = FastAPI(
@@ -19,9 +19,10 @@ app.add_middleware(
     allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_headers=["Authorization", "Content-Type", "Idempotency-Key"],
 )
 
+app.include_router(hardware.router, prefix="/api/hardware", tags=["hardware"])
 app.include_router(speech.router, prefix="/api/speech", tags=["speech"])
 app.include_router(circuits.router, prefix="/api/circuits", tags=["circuits"])
 
@@ -41,6 +42,8 @@ def ready(db: Session = Depends(get_db)):
     try:
         db.execute(text("SELECT user_id, otp_attempts FROM users LIMIT 1"))
         db.execute(text("SELECT key FROM request_limits LIMIT 1"))
+        if settings.hardware_execution_enabled:
+            db.execute(text("SELECT id FROM hardware_jobs LIMIT 1"))
     except Exception:
         raise HTTPException(503, "Database unavailable or migrations missing") from None
     return {"status": "ready"}
