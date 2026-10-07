@@ -136,7 +136,7 @@ def test_unknown_gate_rejected():
         "POST",
         SIMULATE,
         json={
-            "gates": [{"type": "RX", "qubit": 0}],
+            "gates": [{"type": "UNKNOWN_GATE", "qubit": 0}],
             "num_qubits": 1,
             "backend": "qiskit",
         },

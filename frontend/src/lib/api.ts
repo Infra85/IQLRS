@@ -6,6 +6,9 @@ export type Gate = {
   qubit?: number | null;
   control?: number | null;
   target?: number | null;
+  targets?: number[];
+  controls?: number[];
+  params?: { theta: number };
 };
 
 export type CircuitRequest = {
@@ -20,6 +23,9 @@ export type CircuitResult = {
   counts: Record<string, number>;
   statevector: number[][] | null;
   circuit_diagram: string | null;
+  measurements?: { operation: number; qubits: number[]; bits: string }[];
+  measurement_counts?: Record<string, Record<string, number>>;
+  metadata?: { statevector_scope: string; bit_order: string; shots: number };
 };
 
 export async function apiFetch(path: string, options?: RequestInit) {

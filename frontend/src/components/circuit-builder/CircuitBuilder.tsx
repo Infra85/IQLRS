@@ -13,6 +13,13 @@ import {
 } from "react";
 import {
   dropGate,
+  PALETTE,
+  isLinked,
+  isRotation,
+  parseAngle,
+  makeGate,
+  validateCircuit,
+  type PaletteGate,
   type GateDragSource,
   type GateDropTarget,
 } from "./edit-circuit";
@@ -20,8 +27,6 @@ import { useGateDrag } from "./use-gate-drag";
 import { useSearchParams } from "next/navigation";
 import { simulateCircuit, type CircuitResult, type Gate } from "@/lib/api";
 
-const PALETTE = ["H", "X", "Y", "Z", "CNOT"] as const;
-type PaletteGate = (typeof PALETTE)[number];
 
 const CHALLENGES = {
   bell: {
@@ -63,7 +68,15 @@ const GATE_NAMES: Record<string, string> = {
   X: "Pauli X",
   Y: "Pauli Y",
   Z: "Pauli Z",
-  CNOT: "Controlled NOT",
+  CNOT: "Controlled NOT (CX)",
+  I: "Identity",
+  S: "Phase pi/2",
+  T: "Phase pi/4",
+  RX: "X rotation", RY: "Y rotation", RZ: "Z rotation",
+  CY: "Controlled Y", CZ: "Controlled Z", CH: "Controlled H",
+  CRX: "Controlled X rotation", CRY: "Controlled Y rotation", CRZ: "Controlled Z rotation",
+  SWAP: "Swap two qubits",
+  MEASURE: "Measure one qubit", MEASURE_ALL: "Measure all qubits", RESET: "Reset to zero",
 };
 const GATE_STYLES: Record<string, string> = Object.fromEntries(
   PALETTE.map((gate) => [gate, "instrument-gate"]),
@@ -92,6 +105,7 @@ export default function CircuitBuilder() {
   const [shots, setShots] = useState(1024);
   const [gates, setGates] = useState<Gate[]>([]);
   const [selected, setSelected] = useState<PaletteGate | null>("H");
+  const [thetaInput, setThetaInput] = useState("pi/2");
   const [cnotControl, setCnotControl] = useState<number | null>(null);
   const [cnotColumn, setCnotColumn] = useState<number | null>(null);
   const [result, setResult] = useState<CircuitResult | null>(null);
@@ -125,8 +139,8 @@ export default function CircuitBuilder() {
 
   function handleDrop(source: GateDragSource, target: GateDropTarget) {
     if (loading) return;
-    if (source.type === "CNOT" && source.index === undefined) {
-      setSelected("CNOT");
+    if (isLinked(source.type) && source.index === undefined) {
+      setSelected(source.type as PaletteGate);
       setCnotControl(target.qubit);
       setCnotColumn(target.column);
       setDragMessage(
@@ -134,7 +148,10 @@ export default function CircuitBuilder() {
       );
       return;
     }
-    const next = dropGate(gates, source, target, numQubits);
+    let next: Gate[] | null;
+    try {
+      next = dropGate(gates, { ...source, theta: isRotation(source.type) && source.index === undefined ? parseAngle(thetaInput) : undefined }, target, numQubits);
+    } catch (err) { setError((err as Error).message); return; }
     if (!next) {
       setDragMessage(
         "That move would put a linked qubit outside the circuit. The gate has not moved.",
@@ -215,7 +232,11 @@ export default function CircuitBuilder() {
 
   function placeOnQubit(qubit: number) {
     if (!selected) return;
-    if (selected === "CNOT") {
+    let theta = Math.PI / 2;
+    try { if (isRotation(selected)) theta = parseAngle(thetaInput); }
+    catch (err) { setError((err as Error).message); return; }
+    setError(null);
+    if (isLinked(selected)) {
       if (cnotControl === null) {
         setCnotControl(qubit);
         return;
@@ -228,11 +249,7 @@ export default function CircuitBuilder() {
       const column = cnotColumn ?? gates.length;
       setGates((current) => {
         const next = [...current];
-        next.splice(column, 0, {
-          type: "CNOT",
-          control: cnotControl,
-          target: qubit,
-        });
+        next.splice(column, 0, makeGate(selected, qubit, cnotControl, theta));
         return next;
       });
       setPlacedColumn(column);
@@ -242,7 +259,7 @@ export default function CircuitBuilder() {
       setChallengeStatus(null);
       return;
     }
-    setGates((current) => [...current, { type: selected, qubit }]);
+    setGates((current) => [...current, makeGate(selected, qubit, undefined, theta)]);
     setPlacedColumn(gates.length);
     setResult(null);
     setChallengeStatus(null);
@@ -278,6 +295,7 @@ export default function CircuitBuilder() {
     setLoading(true);
     setError(null);
     try {
+      validateCircuit(gates, numQubits);
       const data = await simulateCircuit({
         gates,
         num_qubits: numQubits,
@@ -321,15 +339,15 @@ export default function CircuitBuilder() {
   }
 
   const placementInstructions =
-    selected === "CNOT"
+    selected && isLinked(selected)
       ? cnotControl === null
-        ? "CNOT selected — click a qubit wire for the control, then the target."
-        : `Control is q${cnotControl} — click a different qubit for the target.`
+        ? `${selected} selected — choose ${selected === "SWAP" ? "the first qubit, then the second" : "the control, then the target"}.`
+        : `${selected === "SWAP" ? "First qubit" : "Control"} is q${cnotControl} — click a different qubit.`
       : selected
-        ? `${GATE_NAMES[selected]} selected — click a qubit wire to place it.`
+        ? `${GATE_NAMES[selected] ?? selected} selected — click a qubit wire to place it.`
         : "Select a gate, then click a qubit wire.";
   const editingInstructions =
-    "Drag a gate onto a wire, or select it and click a wire. Drop before a gate to insert. Drag placed gates to move them; CNOT keeps its linked qubits together. For a new CNOT, choose the control first, then its target. Click a placed gate to remove it. With a gate focused, Alt + arrow keys move it. Escape cancels a drag. Gates run from left to right.";
+    "Drag a gate onto a wire, or select it and click a wire. Drop before a gate to insert. Drag placed gates to move them; Linked gates keep their qubits together. For controlled gates, choose the control first, then its target. For SWAP, choose two distinct qubits. Click a placed gate to remove it. With a gate focused, Alt + arrow keys move it. Escape cancels a drag. Gates run from left to right.";
   const interpretation = result
     ? `This run sampled ${resultShots} measurements. ${Object.entries(
         result.counts,
@@ -475,7 +493,7 @@ export default function CircuitBuilder() {
                 key={gate}
                 {...dragging.bind({ type: gate })}
                 aria-pressed={selected === gate}
-                title={GATE_NAMES[gate]}
+                title={GATE_NAMES[gate] ?? gate}
                 type="button"
                 onClick={() => {
                   setSelected((current) => (current === gate ? null : gate));
@@ -490,6 +508,24 @@ export default function CircuitBuilder() {
               </button>
             ))}
           </div>
+          {selected && isRotation(selected) && (
+            <label className="mt-4 flex flex-col gap-2 text-sm">Theta (radians)
+              <Input aria-label="Theta (radians)" value={thetaInput} onChange={e => setThetaInput(e.target.value)} />
+              <span>Examples: pi/2, -pi, 0.75. Applied when placing a gate.</span>
+            </label>
+          )}
+          {gates.some(g => isRotation(g.type)) && <div className="mt-4 space-y-2">
+            {gates.map((gate, index) => isRotation(gate.type) && <label key={index} className="flex items-center gap-3 text-sm">
+              Operation {index + 1}: {gate.type} theta
+              <Input aria-label={`Operation ${index + 1} theta`} key={`${index}-${gate.type}-${gate.params?.theta}`} defaultValue={String(gate.params?.theta)} onBlur={e => {
+                try {
+                  const theta = parseAngle(e.target.value);
+                  setGates(current => current.map((g, i) => i === index ? { ...g, params: { theta } } : g));
+                  setResult(null); setChallengeStatus(null); setError(null);
+                } catch (err) { setError(`${(err as Error).message} Previous angle retained.`); e.target.value = String(gate.params?.theta); }
+              }} />
+            </label>)}
+          </div>}
           <p role="status" className="mt-4 text-sm text-slate-400 leading-6">
             {placementInstructions}
           </p>
@@ -586,7 +622,7 @@ export default function CircuitBuilder() {
             <h2 className="section-title">Measurement counts</h2>
             <p className="technical mt-2">
               {resultShots.toLocaleString()} shots / bars relative to largest
-              count
+              count · final computational-basis sampling
             </p>
             <ul className="result-list mt-4 space-y-3">
               {Object.entries(result.counts)
@@ -615,7 +651,8 @@ export default function CircuitBuilder() {
 
           <div className="panel p-5 min-w-0">
             <h2 className="section-title">Statevector</h2>
-            <p className="technical mt-2">Amplitude / probability</p>
+            <p className="technical mt-2">Amplitude / exact probability · q(n−1)…q0</p>
+            {result.metadata?.statevector_scope === "last_shot" && <p className="mt-2 text-sm text-amber-200">Conditional state from the last shot, after measurement/reset. Counts aggregate all shots.</p>}
             {result.statevector ? (
               <ul className="result-list mt-4 space-y-2 font-mono text-xs text-slate-300">
                 {result.statevector.map((pair, index) => (
@@ -640,6 +677,13 @@ export default function CircuitBuilder() {
             )}
           </div>
 
+          {!!result.measurements?.length && <div className="panel p-5 lg:col-span-2">
+            <h2 className="section-title">Explicit measurements</h2>
+            {result.measurements.map(m => <div key={m.operation} className="mt-3 text-sm">
+              <p>Operation {m.operation + 1} · qubits {m.qubits.map(q => `q${q}`).join(", ")} · last shot: {m.bits}</p>
+              <p>Counts across shots: {Object.entries(result.measurement_counts?.[String(m.operation)] ?? {}).map(([bits, count]) => `${bits}: ${count}`).join(" · ")}</p>
+            </div>)}
+          </div>}
           {result.circuit_diagram && (
             <div className="panel p-5 min-w-0 lg:col-span-2">
               <h2 className="text-lg font-semibold">Circuit diagram</h2>
@@ -771,10 +815,10 @@ function GateCell({
     "data-executing": executing,
     "data-placed": placed,
   };
-  const isCnot = gate.type === "CNOT";
+  const isCnot = isLinked(gate.type);
   const involved = isCnot
     ? gate.control === qubit || gate.target === qubit
-    : gate.qubit === qubit;
+    : gate.type === "MEASURE_ALL" || gate.qubit === qubit;
 
   if (!involved) {
     const betweenCnot =
@@ -811,19 +855,19 @@ function GateCell({
         onKeyDown={(event) => onMoveKey(index, qubit, event)}
         type="button"
         onClick={onRemove}
-        aria-label={`Remove CNOT, control q${gate.control}, target q${gate.target}`}
-        title="Remove CNOT"
+        aria-label={`Remove ${gate.type}, first q${gate.control}, target q${gate.target}`}
+        title={`Remove ${gate.type}${gate.params ? `(${gate.params.theta})` : ""}`}
         className="circuit-cell draggable-gate relative flex h-12 min-w-[3.5rem] items-center justify-center"
       >
         <span className="absolute inset-x-0 top-1/2 h-px bg-slate-600" />
         <span
           className={`absolute w-px bg-quantum-300 ${qubit === Math.min(gate.control!, gate.target!) ? "top-1/2 -bottom-2" : "-top-2 bottom-1/2"}`}
         />
-        {isControl ? (
+        {isControl && gate.type !== "SWAP" ? (
           <span className="relative z-10 h-3 w-3 rounded-full bg-quantum-300" />
         ) : (
           <span className="relative z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 border-quantum-300 text-xs text-quantum-200">
-            ⊕
+            {gate.type === "SWAP" ? "×" : gate.type === "CNOT" ? "⊕" : gate.type.slice(1)}
           </span>
         )}
       </button>
@@ -838,7 +882,7 @@ function GateCell({
       type="button"
       onClick={onRemove}
       aria-label={`Remove ${gate.type} from qubit ${qubit}`}
-      title={`Remove ${gate.type}`}
+      title={`Remove ${gate.type}${gate.params ? `(${gate.params.theta})` : ""}`}
       className="circuit-cell draggable-gate relative flex h-12 min-w-[3.5rem] items-center justify-center"
     >
       <span className="absolute inset-x-0 top-1/2 h-px bg-slate-600" />
@@ -847,7 +891,7 @@ function GateCell({
           GATE_STYLES[gate.type] ?? "bg-slate-600 border-gray-500"
         }`}
       >
-        {gate.type}
+        {gate.type === "RESET" ? "|0⟩" : gate.type === "MEASURE_ALL" ? "M all" : gate.type === "MEASURE" ? "M" : gate.type}
       </span>
     </button>
   );
