@@ -1,11 +1,14 @@
 "use client";
 
+import { ChallengePanel, type ChallengeHandle } from "./ChallengePanel";
+import type { CircuitRequest } from "@/lib/api";
 import { ListenButton } from "@/components/narration/provider";
 import { Button } from "@/components/ui/button";
 import { Status, EmptyState } from "@/components/ui/page";
 import { Input } from "@/components/ui/input";
 import {
   useEffect,
+  useCallback,
   useMemo,
   useRef,
   useState,
@@ -36,41 +39,6 @@ import { useSearchParams } from "next/navigation";
 import { simulateCircuit, type CircuitResult, type Gate, type ClassicalRegister } from "@/lib/api";
 
 
-const CHALLENGES = {
-  bell: {
-    title: "Bell State challenge",
-    instructions:
-      "Starting from |00⟩, place H on q0, then CNOT with q0 as control and q1 as target. The simulator must produce |Φ+⟩ = (|00⟩ + |11⟩)/√2.",
-    gates: [
-      { type: "H", qubit: 0 },
-      { type: "CNOT", control: 0, target: 1 },
-    ] as Gate[],
-  },
-  grover: {
-    title: "Grover 2-qubit challenge",
-    instructions:
-      "Build a two-qubit Grover search circuit for the marked state |11⟩. A successful simulated state has all probability on |11⟩. You can load the guided circuit to inspect and run it.",
-    gates: [
-      { type: "H", qubit: 0 },
-      { type: "H", qubit: 1 },
-      { type: "H", qubit: 1 },
-      { type: "CNOT", control: 0, target: 1 },
-      { type: "H", qubit: 1 },
-      { type: "H", qubit: 0 },
-      { type: "H", qubit: 1 },
-      { type: "X", qubit: 0 },
-      { type: "X", qubit: 1 },
-      { type: "H", qubit: 1 },
-      { type: "CNOT", control: 0, target: 1 },
-      { type: "H", qubit: 1 },
-      { type: "X", qubit: 0 },
-      { type: "X", qubit: 1 },
-      { type: "H", qubit: 0 },
-      { type: "H", qubit: 1 },
-    ] as Gate[],
-  },
-} as const;
-
 const GATE_NAMES: Record<string, string> = {
   H: "Hadamard",
   X: "Pauli X",
@@ -96,12 +64,12 @@ function probability(pair: number[]): number {
 
 export default function CircuitBuilder() {
   const searchParams = useSearchParams();
-  const challengeKey = searchParams.get("challenge") as
-    keyof typeof CHALLENGES | null;
-  const challenge =
-    challengeKey && Object.hasOwn(CHALLENGES, challengeKey)
-      ? CHALLENGES[challengeKey]
-      : undefined;
+  const challengeKey = searchParams.get("challenge");
+  const moduleContext = searchParams.get("module");
+  const challengeMode = !!(challengeKey || moduleContext);
+  const challengeRef = useRef<ChallengeHandle>(null);
+  const [contextReady, setContextReady] = useState(!challengeMode);
+  const [conceptual, setConceptual] = useState(false);
   const [executionMode, setExecutionMode] = useState("local");
   const [debugSettings, setDebugSettings] = useState(initialDebugSettings);
   const [inspectedOperation, setInspectedOperation] = useState<number | null>(null);
@@ -120,7 +88,6 @@ export default function CircuitBuilder() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resultShots, setResultShots] = useState(1024);
-  const [challengeStatus, setChallengeStatus] = useState<string | null>(null);
   const [executionStep, setExecutionStep] = useState(-1);
   const [placedColumn, setPlacedColumn] = useState<number | null>(null);
   const [dragMessage, setDragMessage] = useState("");
@@ -175,7 +142,6 @@ export default function CircuitBuilder() {
   function updateOperation(index: number, gate: Gate) {
     setGates(current => current.map((g, i) => i === index ? gate : g));
     setResult(null);
-    setChallengeStatus(null);
     setError(null);
   }
 
@@ -207,7 +173,6 @@ export default function CircuitBuilder() {
     setGates(next.map(g => withDefaultDestinations(g, registers, numQubits)));
     setResult(null);
     setError(null);
-    setChallengeStatus(null);
     setCnotControl(null);
     setCnotColumn(null);
     setPlacedColumn(column);
@@ -269,7 +234,6 @@ export default function CircuitBuilder() {
     setCnotControl(null);
     setCnotColumn(null);
     setResult(null);
-    setChallengeStatus(null);
   }
 
   function placeOnQubit(qubit: number) {
@@ -298,19 +262,16 @@ export default function CircuitBuilder() {
       setCnotControl(null);
       setCnotColumn(null);
       setResult(null);
-      setChallengeStatus(null);
       return;
     }
     setGates((current) => [...current, configuredGate(selected, qubit, undefined, theta)]);
     setPlacedColumn(gates.length);
     setResult(null);
-    setChallengeStatus(null);
   }
 
   function removeGate(index: number) {
     setGates((current) => current.filter((_, i) => i !== index));
     setResult(null);
-    setChallengeStatus(null);
   }
 
   function clearCircuit() {
@@ -318,22 +279,18 @@ export default function CircuitBuilder() {
     setCnotControl(null);
     setCnotColumn(null);
     setResult(null);
-    setChallengeStatus(null);
     setError(null);
   }
 
-  function loadChallengeCircuit() {
-    if (!challenge) return;
-    setNumQubits(2);
-    setGates(challenge.gates);
-    setCnotControl(null);
-    setCnotColumn(null);
-    setError(null);
-    setResult(null);
-    setChallengeStatus(null);
-  }
+  const loadActivityCircuit = useCallback((c: CircuitRequest) => {
+    setNumQubits(c.num_qubits); setGates(c.gates); setRegisters(c.classical_registers);
+    setShots(c.shots ?? 1024); setCnotControl(null); setCnotColumn(null); setError(null); setResult(null);
+  }, []);
+  const activityResult = useCallback((r: CircuitResult) => { setResult(r); setResultShots(r.metadata?.shots ?? 1024); }, []);
+  const activityReady = useCallback((ready: boolean, isConceptual: boolean) => { setContextReady(ready); setConceptual(isConceptual); }, []);
 
   async function onSimulate() {
+    if (challengeMode) { await challengeRef.current?.run(); return; }
     setLoading(true);
     setError(null);
     try {
@@ -354,34 +311,8 @@ export default function CircuitBuilder() {
       });
       setResult(data);
       setResultShots(shots);
-      if (challengeKey === "bell") {
-        const p00 = data.statevector ? probability(data.statevector[0]) : 0;
-        const p11 = data.statevector ? probability(data.statevector[3]) : 0;
-        const conceptualCircuit =
-          gates.length === 2 &&
-          gates[0].type === "H" &&
-          gates[0].qubit === 0 &&
-          gates[1].type === "CNOT" &&
-          gates[1].control === 0 &&
-          gates[1].target === 1;
-        setChallengeStatus(
-          conceptualCircuit &&
-            Math.abs(p00 - 0.5) < 1e-9 &&
-            Math.abs(p11 - 0.5) < 1e-9
-            ? "Challenge complete: your required H → CNOT circuit simulated the Bell state |Φ+⟩."
-            : "Not complete yet: use exactly H on q0 followed by CNOT control q0 → target q1, then simulate.",
-        );
-      } else if (challengeKey === "grover") {
-        const p11 = data.statevector ? probability(data.statevector[3]) : 0;
-        setChallengeStatus(
-          numQubits === 2 && p11 > 0.999999
-            ? "Challenge complete: simulation concentrates probability on the marked state |11⟩."
-            : `Keep refining the circuit: the simulator reports P(|11⟩) = ${(p11 * 100).toFixed(1)}%.`,
-        );
-      }
     } catch (err) {
       setResult(null);
-      setChallengeStatus(null);
       setError(err instanceof Error ? err.message : "Simulation failed");
     } finally {
       setLoading(false);
@@ -432,62 +363,9 @@ export default function CircuitBuilder() {
       <span role="status" className="sr-only">
         {dragMessage}
       </span>
-      <fieldset disabled={loading} className="circuit-config">
+      {challengeMode && <ChallengePanel key={`${challengeKey}:${moduleContext}`} ref={challengeRef} id={challengeKey} module={moduleContext} circuit={{gates, num_qubits: numQubits, classical_registers: registers, shots}} load={loadActivityCircuit} onResult={activityResult} onReady={activityReady} onBusy={setLoading} />}
+      {!conceptual && contextReady && <fieldset disabled={loading} className="circuit-config">
         <legend className="sr-only">Circuit configuration</legend>
-        {challenge && (
-          <section
-            id="circuit-challenge"
-            className="panel p-6 circuit-challenge"
-          >
-            <h2 className="text-xl font-semibold">{challenge.title}</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-300">
-              {challenge.instructions}
-            </p>
-            <ListenButton
-              className="mt-3"
-              owner="circuit-challenge"
-              label="Listen to challenge"
-              segments={[
-                {
-                  id: "challenge",
-                  title: challenge.title,
-                  text: challenge.instructions,
-                  targetId: "circuit-challenge",
-                },
-              ]}
-            />
-            <Button
-              variant="secondary"
-              onClick={loadChallengeCircuit}
-              className="mt-4"
-            >
-              Load guided circuit
-            </Button>
-            {challengeStatus && (
-              <ListenButton
-                className="mt-3"
-                owner="challenge-feedback"
-                segments={[
-                  {
-                    id: "challenge-feedback",
-                    title: "Challenge feedback",
-                    text: challengeStatus,
-                    targetId: "circuit-challenge",
-                  },
-                ]}
-                label="Listen to feedback"
-              />
-            )}
-            {challengeStatus && (
-              <p
-                role="status"
-                className={`mt-4 rounded-lg p-3 text-sm ${challengeStatus.startsWith("Challenge complete") ? "bg-green-950/50 text-green-200" : "bg-amber-950/50 text-amber-200"}`}
-              >
-                {challengeStatus}
-              </p>
-            )}
-          </section>
-        )}
         <section className="panel instrument-toolbar">
           <div className="field">
             <span id="qubit-label">Qubits</span>
@@ -508,7 +386,7 @@ export default function CircuitBuilder() {
                 type="button"
                 className="ui-button button-secondary !p-0 w-11"
                 aria-label="Add one qubit"
-                disabled={numQubits >= 10}
+                disabled={numQubits >= (challengeMode ? 3 : 10)}
                 onClick={() => changeQubits(numQubits + 1)}
               >
                 +
@@ -520,11 +398,11 @@ export default function CircuitBuilder() {
             <Input
               type="number"
               min={1}
-              max={8192}
+              max={challengeMode ? 2048 : 8192}
               value={shots}
               onChange={(event) =>
                 setShots(
-                  Math.min(8192, Math.max(1, Number(event.target.value) || 1)),
+                  Math.min(challengeMode ? 2048 : 8192, Math.max(1, Math.trunc(Number(event.target.value)) || 1)),
                 )
               }
               className="w-28"
@@ -532,7 +410,7 @@ export default function CircuitBuilder() {
           </label>
         </section>
 
-        {executionMode === "local" && <section className="panel p-5 flex flex-wrap gap-4 items-end" aria-label="Shot execution options">
+        {!challengeMode && executionMode === "local" && <section className="panel p-5 flex flex-wrap gap-4 items-end" aria-label="Shot execution options">
           <label className="text-sm">Random seed (optional)
             <Input aria-label="Random seed (optional)" value={seedInput} onChange={e => setSeedInput(e.target.value)} placeholder="Random each run" />
           </label>
@@ -545,7 +423,7 @@ export default function CircuitBuilder() {
           </label>}
         </section>}
 
-        {executionMode === "local" && <DebugControls settings={debugSettings} onChange={setDebugSettings} />}
+        {!challengeMode && executionMode === "local" && <DebugControls settings={debugSettings} onChange={setDebugSettings} />}
 
         <section id="gate-instructions" className="panel p-6">
           <div className="flex justify-between gap-3 mb-5">
@@ -586,7 +464,7 @@ export default function CircuitBuilder() {
                 try {
                   const theta = parseAngle(e.target.value);
                   setGates(current => current.map((g, i) => i === index ? { ...g, params: { theta } } : g));
-                  setResult(null); setChallengeStatus(null); setError(null);
+                  setResult(null); setError(null);
                 } catch (err) { setError(`${(err as Error).message} Previous angle retained.`); e.target.value = String(gate.params?.theta); }
               }} />
             </label>)}
@@ -610,8 +488,13 @@ export default function CircuitBuilder() {
           />
         </section>
 
-        <ClassicalControls registers={registers} gates={gates} numQubits={numQubits}
-          onRegisters={updateRegisters} onRename={renameRegister} onGate={updateOperation} />
+        {challengeMode ? <details className="col-span-full panel p-5">
+          <summary className="cursor-pointer font-semibold">Classical registers and conditions</summary>
+          <ClassicalControls registers={registers} gates={gates} numQubits={numQubits}
+            onRegisters={updateRegisters} onRename={renameRegister} onGate={updateOperation} />
+        </details> : <ClassicalControls registers={registers} gates={gates} numQubits={numQubits}
+          onRegisters={updateRegisters} onRename={renameRegister} onGate={updateOperation} />}
+
 
         <section
           ref={stageRef}
@@ -641,8 +524,9 @@ export default function CircuitBuilder() {
             ))}
           </div>
         </section>
-      </fieldset>
-      <HardwareExecution circuit={{ gates, num_qubits: numQubits, shots, classical_registers: registers }} mode={executionMode} onMode={setExecutionMode} />
+      </fieldset>}
+      {!conceptual && contextReady && <>
+      {!challengeMode && <HardwareExecution circuit={{ gates, num_qubits: numQubits, shots, classical_registers: registers }} mode={executionMode} onMode={setExecutionMode} />}
       <div className="flex flex-wrap items-center gap-3">
         {executionMode === "local" && <Button onClick={onSimulate} disabled={loading}>
           {loading ? "Simulating…" : "Run simulation"}
@@ -669,7 +553,7 @@ export default function CircuitBuilder() {
       {executionMode === "local" && result && (
         <section className="grid gap-6 lg:grid-cols-2">
           <div id="result-interpretation" className="panel p-5 lg:col-span-2">
-            <p className="text-sm text-slate-400 mb-4">{result.simulation_id ? "Saved to your account. View your activity in My progress." : "Guest simulation — sign in before running to save results and track progress."}</p>
+            <p className="text-sm text-slate-400 mb-4">{challengeMode ? "Activity run saved with your committed prediction. Validate separately to record completion." : result.simulation_id ? "Saved to your account. View your activity in My progress." : "Guest simulation — sign in before running to save results and track progress."}</p>
             <div className="narration-section-heading">
               <h2 className="section-title">Understanding this result</h2>
               <ListenButton
@@ -750,6 +634,7 @@ export default function CircuitBuilder() {
           )}
         </section>
       )}
+      </>}
     </div>
   );
 }

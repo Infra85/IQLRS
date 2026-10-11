@@ -18,10 +18,10 @@ const modules = require('../../../backend/data/modules.json');
       await page.getByRole('heading', {name:lesson.title.replace(/^Module \d+ – /, ''),exact:true}).waitFor();
       for (const section of lesson.sections) {
         await page.getByRole('heading', {name:section.title,exact:true}).waitFor();
-        assert.ok(await page.locator('article').textContent().then(t => t.includes(section.description)));
+        assert.ok(await page.locator('article.lesson-content').textContent().then(t => t.includes(section.description)));
         assert.ok(await page.locator('pre').allTextContents().then(t => t.includes(section.diagram)));
       }
-      const article = await page.locator('article').innerText();
+      const article = await page.locator('article.lesson-content').innerText();
       assert.ok(article.includes(lesson.workedExample));
       assert.ok(!article.includes('assessmentQuestionIndices'));
       assert.ok(!article.includes('requiresBuilder'));
@@ -41,17 +41,20 @@ const modules = require('../../../backend/data/modules.json');
       }
       await page.getByRole('button',{name:'Retry quiz',exact:true}).click();
       assert.equal(await page.locator('input[type=radio]:checked').count(),0);
-      const builder = page.locator('#example a[href^="/builder"]');
-      if (lesson.id<=3) assert.equal(await builder.count(),0);
-      else {
-        const expected=lesson.id===4?'/builder?challenge=bell':lesson.id===6?'/builder?challenge=grover':'/builder';
-        assert.equal(await builder.getAttribute('href'),expected);
+      for (const activity of [...lesson.experiments, ...lesson.challenges]) {
+        const expected=`/builder?module=${lesson.id}&challenge=${activity.id}`;
+        const builder = page.locator(`#learning-activities a[href="${expected}"]`);
+        await builder.waitFor();
+        assert.equal(await builder.count(),1);
         await builder.click();
         await page.waitForURL(`${base}${expected}`);
-        await page.getByRole('button',{name:'Run simulation',exact:true}).waitFor();
+        await page.getByRole('heading',{name:activity.title,exact:true}).waitFor();
+        await page.getByRole('button',{name:activity.type==='conceptual'?'Validate reasoning':'Run experiment',exact:true}).waitFor();
+        await page.getByRole('link',{name:`Module ${lesson.id} · Back to lesson`,exact:true}).click();
+        await page.waitForURL(`${base}/learn/${lesson.id}`);
       }
     }
     assert.deepEqual(errors,[]);
-    console.log('PASS: 8 lesson renders, 24 quiz answers/explanations, 8 real API submissions/retries, 5 builder links; no page errors.');
+    console.log('PASS: 8 lesson renders, 24 quiz answers/explanations, 8 real API submissions/retries, 16 activity links; no page errors.');
   } finally { await browser.close(); }
 })().catch(error=>{console.error(error);process.exitCode=1;});

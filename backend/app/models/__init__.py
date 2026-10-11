@@ -97,6 +97,8 @@ __all__ = [
     "CourseEnrollment",
     "CourseAssignment",
 
+    "ChallengeWorkspace",
+    "ChallengeAttempt",
     "CodingChallenge",
     "CodeSubmission",
 
@@ -112,3 +114,4 @@ __all__ = [
 ]
 
 from app.models.hardware import HardwareJob
+from app.models.learning_challenge import ChallengeWorkspace, ChallengeAttempt

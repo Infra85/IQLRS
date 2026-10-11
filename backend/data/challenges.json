@@ -1,0 +1,1644 @@
+[
+  {
+    "id": "m1-experiment",
+    "moduleId": 1,
+    "version": 1,
+    "kind": "circuit",
+    "title": "Create a superposition",
+    "objective": "Calculate computational-basis probabilities from normalized amplitudes.",
+    "difficulty": "beginner",
+    "instructions": "Apply H to q0. Predict Z-basis probabilities, then Run. Validate when you are ready.",
+    "initialState": "|0⟩",
+    "starterCircuit": {
+      "num_qubits": 1,
+      "gates": []
+    },
+    "rules": [
+      {
+        "type": "probability",
+        "message": "Match the target computational-basis distribution.",
+        "target": {
+          "0": 0.5,
+          "1": 0.5
+        },
+        "tolerance": 0.02
+      },
+      {
+        "type": "state_equivalence",
+        "message": "Prepare the intended product superposition, including its relative phases.",
+        "target": [
+          [
+            0.7071067811865475,
+            0
+          ],
+          [
+            0.7071067811865475,
+            0
+          ]
+        ],
+        "tolerance": 1e-08
+      }
+    ],
+    "hints": [
+      "Which gate mixes |0⟩ and |1⟩ equally?",
+      "Try H on q0."
+    ],
+    "successFeedback": "Your circuit satisfies the learning objective.",
+    "failureFeedback": "Compare the checks below, revise your circuit or reasoning, and try again.",
+    "solutionExplanation": "H prepares |+⟩. Ideal probabilities are 1/2 each; sampled counts fluctuate.",
+    "prediction": {
+      "kind": "distribution",
+      "labels": [
+        "0",
+        "1"
+      ],
+      "expected": {
+        "0": 0.5,
+        "1": 0.5
+      },
+      "tolerance": 0.03,
+      "prompt": "Predict the displayed outcome probabilities (0 to 1) before running.",
+      "displayLabels": {
+        "0": "P(0)",
+        "1": "P(1)"
+      }
+    },
+    "reflection": "Compare squared amplitudes with counts. A deterministic state should give one outcome; superposition can give multiple outcomes."
+  },
+  {
+    "id": "m1-challenge",
+    "moduleId": 1,
+    "version": 1,
+    "kind": "circuit",
+    "title": "Prepare |1⟩",
+    "objective": "Predict how X prepares |1⟩ from |0⟩.",
+    "difficulty": "beginner",
+    "instructions": "Flip |0⟩ to |1⟩ using one X gate on q0. Predict before running.",
+    "initialState": "|0⟩",
+    "starterCircuit": {
+      "num_qubits": 1,
+      "gates": []
+    },
+    "rules": [
+      {
+        "type": "constraints",
+        "message": "Meet the stated circuit constraints.",
+        "required": [
+          {
+            "type": "X",
+            "qubit": 0
+          }
+        ],
+        "allowed": [
+          "X"
+        ],
+        "maxGates": 1
+      },
+      {
+        "type": "state_equivalence",
+        "message": "Prepare the required quantum state, including its relative phase.",
+        "target": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "tolerance": 1e-08
+      }
+    ],
+    "hints": [
+      "Which gate exchanges |0⟩ and |1⟩?",
+      "Place X on q0."
+    ],
+    "successFeedback": "Your circuit satisfies the learning objective.",
+    "failureFeedback": "Compare the checks below, revise your circuit or reasoning, and try again.",
+    "solutionExplanation": "X exchanges the basis states; Z readout gives 1 with certainty.",
+    "prediction": {
+      "kind": "distribution",
+      "labels": [
+        "0",
+        "1"
+      ],
+      "expected": {
+        "0": 0,
+        "1": 1
+      },
+      "tolerance": 0.03,
+      "prompt": "Predict the displayed outcome probabilities (0 to 1) before running.",
+      "displayLabels": {
+        "0": "P(0)",
+        "1": "P(1)"
+      }
+    },
+    "reflection": "Compare squared amplitudes with counts. A deterministic state should give one outcome; superposition can give multiple outcomes."
+  },
+  {
+    "id": "m2-experiment",
+    "moduleId": 2,
+    "version": 1,
+    "kind": "circuit",
+    "title": "Compare two superpositions",
+    "objective": "Distinguish a product superposition from an entangled pure state.",
+    "difficulty": "intermediate",
+    "instructions": "Apply H to each qubit. Predict all four probabilities. Compare this product state with the Bell challenge in Module 4.",
+    "initialState": "|00⟩",
+    "starterCircuit": {
+      "num_qubits": 2,
+      "gates": []
+    },
+    "rules": [
+      {
+        "type": "probability",
+        "message": "Match the target computational-basis distribution.",
+        "target": {
+          "00": 0.25,
+          "01": 0.25,
+          "10": 0.25,
+          "11": 0.25
+        },
+        "tolerance": 0.02
+      },
+      {
+        "type": "state_equivalence",
+        "message": "Prepare the intended product superposition, including its relative phases.",
+        "target": [
+          [
+            0.5,
+            0
+          ],
+          [
+            0.5,
+            0
+          ],
+          [
+            0.5,
+            0
+          ],
+          [
+            0.5,
+            0
+          ]
+        ],
+        "tolerance": 1e-08
+      }
+    ],
+    "hints": [
+      "Each independent qubit needs an equal superposition.",
+      "Apply H on q0 and H on q1."
+    ],
+    "successFeedback": "Your circuit satisfies the learning objective.",
+    "failureFeedback": "Compare the checks below, revise your circuit or reasoning, and try again.",
+    "solutionExplanation": "The state is |+⟩⊗|+⟩: four equal probabilities do not imply entanglement.",
+    "prediction": {
+      "kind": "distribution",
+      "labels": [
+        "00",
+        "01",
+        "10",
+        "11"
+      ],
+      "expected": {
+        "00": 0.25,
+        "01": 0.25,
+        "10": 0.25,
+        "11": 0.25
+      },
+      "tolerance": 0.03,
+      "prompt": "Predict the displayed outcome probabilities (0 to 1) before running.",
+      "displayLabels": {
+        "00": "P(00)",
+        "01": "P(01)",
+        "10": "P(10)",
+        "11": "P(11)"
+      }
+    },
+    "reflection": "Equal computational-basis probabilities alone do not establish a product state: relative phases matter too. Compare the amplitudes."
+  },
+  {
+    "id": "m2-challenge",
+    "moduleId": 2,
+    "version": 1,
+    "kind": "circuit",
+    "title": "Undo a product superposition",
+    "objective": "Predict how a second Hadamard layer reverses a product superposition.",
+    "difficulty": "intermediate",
+    "instructions": "Keep the initial H gates, then undo their product superposition.",
+    "initialState": "|00⟩",
+    "starterCircuit": {
+      "num_qubits": 2,
+      "gates": [
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "H",
+          "qubit": 1
+        }
+      ]
+    },
+    "rules": [
+      {
+        "type": "constraints",
+        "message": "Meet the stated circuit constraints.",
+        "prefix": [
+          {
+            "type": "H",
+            "qubit": 0
+          },
+          {
+            "type": "H",
+            "qubit": 1
+          }
+        ]
+      },
+      {
+        "type": "state_equivalence",
+        "message": "Prepare the required quantum state, including its relative phase.",
+        "target": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "tolerance": 1e-08
+      }
+    ],
+    "hints": [
+      "H is its own inverse.",
+      "Add H to each wire again."
+    ],
+    "successFeedback": "Your circuit satisfies the learning objective.",
+    "failureFeedback": "Compare the checks below, revise your circuit or reasoning, and try again.",
+    "solutionExplanation": "H²=I on each qubit, restoring |00⟩.",
+    "prediction": {
+      "kind": "distribution",
+      "labels": [
+        "00",
+        "01",
+        "10",
+        "11"
+      ],
+      "expected": {
+        "00": 1,
+        "01": 0,
+        "10": 0,
+        "11": 0
+      },
+      "tolerance": 0.03,
+      "prompt": "Predict the displayed outcome probabilities (0 to 1) before running.",
+      "displayLabels": {
+        "00": "P(00)",
+        "01": "P(01)",
+        "10": "P(10)",
+        "11": "P(11)"
+      }
+    },
+    "reflection": "Equal computational-basis probabilities alone do not establish a product state: relative phases matter too. Compare the amplitudes."
+  },
+  {
+    "id": "m3-experiment",
+    "moduleId": 3,
+    "version": 1,
+    "kind": "circuit",
+    "title": "Compare Z and X readouts",
+    "objective": "Calculate projective-measurement probabilities in a specified basis.",
+    "difficulty": "intermediate",
+    "instructions": "The starter prepares |+⟩. Predict a Z readout, then append MEASURE on q0. In the next activity compare an X-basis readout.",
+    "initialState": "|0⟩",
+    "starterCircuit": {
+      "num_qubits": 1,
+      "gates": [
+        {
+          "type": "H",
+          "qubit": 0
+        }
+      ]
+    },
+    "rules": [
+      {
+        "type": "constraints",
+        "message": "Meet the stated circuit constraints.",
+        "prefix": [
+          {
+            "type": "H",
+            "qubit": 0
+          }
+        ],
+        "required": [
+          {
+            "type": "MEASURE",
+            "qubit": 0,
+            "destinations": [
+              {
+                "register": "c",
+                "bit": 0
+              }
+            ]
+          }
+        ],
+        "allowed": [
+          "H",
+          "MEASURE"
+        ],
+        "maxGates": 2
+      },
+      {
+        "type": "probability",
+        "message": "Match the target computational-basis distribution.",
+        "target": {
+          "0": 0.5,
+          "1": 0.5
+        },
+        "tolerance": 0.02
+      }
+    ],
+    "hints": [
+      "Z measurement samples the squared amplitudes.",
+      "Append MEASURE to q0."
+    ],
+    "successFeedback": "Your circuit satisfies the learning objective.",
+    "failureFeedback": "Compare the checks below, revise your circuit or reasoning, and try again.",
+    "solutionExplanation": "Direct Z readout of |+⟩ is equally likely to give 0 or 1. Each shot collapses to its observed basis state.",
+    "prediction": {
+      "kind": "distribution",
+      "labels": [
+        "0",
+        "1"
+      ],
+      "expected": {
+        "0": 0.5,
+        "1": 0.5
+      },
+      "tolerance": 0.03,
+      "prompt": "Predict the displayed outcome probabilities (0 to 1) before running.",
+      "displayLabels": {
+        "0": "P(0)",
+        "1": "P(1)"
+      }
+    },
+    "reflection": "A measurement samples a probability distribution and returns a conditional state. The final shot’s state is not the distribution across shots."
+  },
+  {
+    "id": "m3-challenge",
+    "moduleId": 3,
+    "version": 1,
+    "kind": "circuit",
+    "title": "Predict before measuring",
+    "objective": "Calculate projective-measurement probabilities in a specified basis.",
+    "difficulty": "intermediate",
+    "instructions": "Starting from |0⟩, implement an X-basis readout using H then MEASURE. Predict the readout. The rotation maps X eigenstates to Z readout states.",
+    "initialState": "|0⟩",
+    "starterCircuit": {
+      "num_qubits": 1,
+      "gates": []
+    },
+    "rules": [
+      {
+        "type": "constraints",
+        "message": "Meet the stated circuit constraints.",
+        "required": [
+          {
+            "type": "H",
+            "qubit": 0
+          },
+          {
+            "type": "MEASURE",
+            "qubit": 0,
+            "destinations": [
+              {
+                "register": "c",
+                "bit": 0
+              }
+            ]
+          }
+        ],
+        "allowed": [
+          "H",
+          "MEASURE"
+        ],
+        "maxGates": 2
+      },
+      {
+        "type": "probability",
+        "message": "Match the target computational-basis distribution.",
+        "target": {
+          "0": 0.5,
+          "1": 0.5
+        },
+        "tolerance": 0.02
+      }
+    ],
+    "hints": [
+      "An H before measurement changes the measurement basis.",
+      "Use H then MEASURE on q0."
+    ],
+    "successFeedback": "Your circuit satisfies the learning objective.",
+    "failureFeedback": "Compare the checks below, revise your circuit or reasoning, and try again.",
+    "solutionExplanation": "The X outcomes + and − each have probability 1/2. Before the readout rotation the conditional states are |+⟩ and |−⟩; the displayed post-rotation states are |0⟩ and |1⟩.",
+    "prediction": {
+      "kind": "distribution",
+      "labels": [
+        "0",
+        "1"
+      ],
+      "expected": {
+        "0": 0.5,
+        "1": 0.5
+      },
+      "tolerance": 0.03,
+      "prompt": "Predict the displayed outcome probabilities (0 to 1) before running.",
+      "displayLabels": {
+        "0": "P(0)",
+        "1": "P(1)"
+      }
+    },
+    "reflection": "A measurement samples a probability distribution and returns a conditional state. The final shot’s state is not the distribution across shots."
+  },
+  {
+    "id": "m4-experiment",
+    "moduleId": 4,
+    "version": 1,
+    "kind": "circuit",
+    "title": "Create and decode a Bell pair",
+    "objective": "Construct |Φ+⟩ using H and CNOT.",
+    "difficulty": "intermediate",
+    "instructions": "The starter prepares Φ+. Run and observe 00/11 correlations; then append the inverse Bell preparation and predict the decoded output before another Run.",
+    "initialState": "|00⟩",
+    "starterCircuit": {
+      "num_qubits": 2,
+      "gates": [
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "CNOT",
+          "control": 0,
+          "target": 1
+        }
+      ]
+    },
+    "rules": [
+      {
+        "type": "constraints",
+        "message": "Meet the stated circuit constraints.",
+        "prefix": [
+          {
+            "type": "H",
+            "qubit": 0
+          },
+          {
+            "type": "CNOT",
+            "control": 0,
+            "target": 1
+          }
+        ]
+      },
+      {
+        "type": "state_equivalence",
+        "message": "Prepare the required quantum state, including its relative phase.",
+        "target": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "tolerance": 1e-08
+      }
+    ],
+    "hints": [
+      "Undo gates in reverse order.",
+      "Append CNOT q0→q1, then H(q0)."
+    ],
+    "successFeedback": "Your circuit satisfies the learning objective.",
+    "failureFeedback": "Compare the checks below, revise your circuit or reasoning, and try again.",
+    "solutionExplanation": "The inverse Bell preparation maps Φ+ to |00⟩. A single-basis correlation alone is not a Bell-inequality test.",
+    "prediction": {
+      "kind": "distribution",
+      "labels": [
+        "00",
+        "01",
+        "10",
+        "11"
+      ],
+      "expected": {
+        "00": 1,
+        "01": 0,
+        "10": 0,
+        "11": 0
+      },
+      "tolerance": 0.03,
+      "prompt": "Predict the displayed outcome probabilities (0 to 1) before running.",
+      "displayLabels": {
+        "00": "P(00)",
+        "01": "P(01)",
+        "10": "P(10)",
+        "11": "P(11)"
+      }
+    },
+    "reflection": "Inspect joint outcomes, not just individual qubits. Matching Z outcomes do not determine the relative phase of a Bell state."
+  },
+  {
+    "id": "m4-challenge",
+    "moduleId": 4,
+    "version": 1,
+    "kind": "circuit",
+    "title": "Prepare |Φ+⟩",
+    "objective": "Construct |Φ+⟩ using H and CNOT.",
+    "difficulty": "intermediate",
+    "instructions": "Prepare Φ+ = (|00⟩+|11⟩)/√2 from |00⟩. Equivalent circuits are welcome. Validate the unmeasured state; Run already samples computational-basis outcomes.",
+    "initialState": "|00⟩",
+    "starterCircuit": {
+      "num_qubits": 2,
+      "gates": []
+    },
+    "rules": [
+      {
+        "type": "state_equivalence",
+        "message": "Prepare the required quantum state, including its relative phase.",
+        "target": [
+          [
+            0.7071067811865475,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0.7071067811865475,
+            0
+          ]
+        ],
+        "tolerance": 1e-08
+      },
+      {
+        "type": "probability",
+        "message": "Match the target computational-basis distribution.",
+        "target": {
+          "00": 0.5,
+          "01": 0,
+          "10": 0,
+          "11": 0.5
+        },
+        "tolerance": 0.02
+      },
+      {
+        "type": "correlation",
+        "message": "Outcomes must be balanced and perfectly correlated, not just have equal marginals.",
+        "target": {
+          "00": 0.5,
+          "01": 0,
+          "10": 0,
+          "11": 0.5
+        },
+        "tolerance": 0.02
+      }
+    ],
+    "hints": [
+      "What creates superposition from |0⟩?",
+      "Try H on q0.",
+      "Use q0 as CNOT control and q1 as target."
+    ],
+    "successFeedback": "Your circuit satisfies the learning objective.",
+    "failureFeedback": "Compare the checks below, revise your circuit or reasoning, and try again.",
+    "solutionExplanation": "H creates superposition and CNOT correlates the qubits. The relative plus phase distinguishes Φ+ from Φ− even though both have the same Z probabilities.",
+    "prediction": {
+      "kind": "distribution",
+      "labels": [
+        "00",
+        "01",
+        "10",
+        "11"
+      ],
+      "expected": {
+        "00": 0.5,
+        "01": 0,
+        "10": 0,
+        "11": 0.5
+      },
+      "tolerance": 0.03,
+      "prompt": "Predict the displayed outcome probabilities (0 to 1) before running.",
+      "displayLabels": {
+        "00": "P(00)",
+        "01": "P(01)",
+        "10": "P(10)",
+        "11": "P(11)"
+      }
+    },
+    "reflection": "Inspect joint outcomes, not just individual qubits. Matching Z outcomes do not determine the relative phase of a Bell state."
+  },
+  {
+    "id": "m5-experiment",
+    "moduleId": 5,
+    "version": 1,
+    "kind": "circuit",
+    "title": "Compare simple promised oracles",
+    "objective": "Trace phase kickback and predict the two-input-qubit example.",
+    "difficulty": "intermediate",
+    "instructions": "Known promised oracle: f(x1x0)=0 (constant), identity oracle. Keep the starter preparation/oracle. Add final H gates to q0/q1, then measure q0→c0 and q1→c1. Predict c1c0.",
+    "initialState": "|000⟩",
+    "starterCircuit": {
+      "num_qubits": 3,
+      "gates": [
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "H",
+          "qubit": 1
+        },
+        {
+          "type": "X",
+          "qubit": 2
+        },
+        {
+          "type": "H",
+          "qubit": 2
+        }
+      ],
+      "classical_registers": [
+        {
+          "name": "c",
+          "size": 2
+        }
+      ]
+    },
+    "rules": [
+      {
+        "type": "constraints",
+        "message": "Meet the stated circuit constraints.",
+        "prefix": [
+          {
+            "type": "H",
+            "qubit": 0
+          },
+          {
+            "type": "H",
+            "qubit": 1
+          },
+          {
+            "type": "X",
+            "qubit": 2
+          },
+          {
+            "type": "H",
+            "qubit": 2
+          }
+        ],
+        "required": [
+          {
+            "type": "MEASURE",
+            "qubit": 0,
+            "destinations": [
+              {
+                "register": "c",
+                "bit": 0
+              }
+            ]
+          },
+          {
+            "type": "MEASURE",
+            "qubit": 1,
+            "destinations": [
+              {
+                "register": "c",
+                "bit": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "classical_output",
+        "message": "Read the input register as c1c0.",
+        "target": {
+          "00": 1
+        },
+        "tolerance": 0.02
+      }
+    ],
+    "hints": [
+      "The target is |−⟩ for phase kickback.",
+      "Interfere the inputs with H(q0) and H(q1).",
+      "Measure q0 and q1 into their matching c bits."
+    ],
+    "successFeedback": "Your circuit satisfies the learning objective.",
+    "failureFeedback": "Compare the checks below, revise your circuit or reasoning, and try again.",
+    "solutionExplanation": "The promised constant oracle yields input c1c0=00. Only the input register is classified; q2 is the auxiliary qubit.",
+    "prediction": {
+      "kind": "distribution",
+      "labels": [
+        "00",
+        "01",
+        "10",
+        "11"
+      ],
+      "expected": {
+        "00": 1,
+        "01": 0,
+        "10": 0,
+        "11": 0
+      },
+      "tolerance": 0.03,
+      "prompt": "Predict the displayed outcome probabilities (0 to 1) before running.",
+      "displayLabels": {
+        "00": "P(00)",
+        "01": "P(01)",
+        "10": "P(10)",
+        "11": "P(11)"
+      }
+    },
+    "reflection": "Read c1c0, the input bits only. Under the Deutsch–Jozsa promise, 00 identifies a constant function; a nonzero input result identifies a balanced one."
+  },
+  {
+    "id": "m5-challenge",
+    "moduleId": 5,
+    "version": 1,
+    "kind": "circuit",
+    "title": "Classify a promised instance",
+    "objective": "Trace phase kickback and predict the two-input-qubit example.",
+    "difficulty": "intermediate",
+    "instructions": "Known promised oracle: f(x1x0)=x0 (balanced), truth table 0,1,0,1. Keep the starter preparation/oracle. Add final H gates to q0/q1, then measure q0→c0 and q1→c1. Predict c1c0.",
+    "initialState": "|000⟩",
+    "starterCircuit": {
+      "num_qubits": 3,
+      "gates": [
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "H",
+          "qubit": 1
+        },
+        {
+          "type": "X",
+          "qubit": 2
+        },
+        {
+          "type": "H",
+          "qubit": 2
+        },
+        {
+          "type": "CNOT",
+          "control": 0,
+          "target": 2
+        }
+      ],
+      "classical_registers": [
+        {
+          "name": "c",
+          "size": 2
+        }
+      ]
+    },
+    "rules": [
+      {
+        "type": "constraints",
+        "message": "Meet the stated circuit constraints.",
+        "prefix": [
+          {
+            "type": "H",
+            "qubit": 0
+          },
+          {
+            "type": "H",
+            "qubit": 1
+          },
+          {
+            "type": "X",
+            "qubit": 2
+          },
+          {
+            "type": "H",
+            "qubit": 2
+          },
+          {
+            "type": "CNOT",
+            "control": 0,
+            "target": 2
+          }
+        ],
+        "required": [
+          {
+            "type": "MEASURE",
+            "qubit": 0,
+            "destinations": [
+              {
+                "register": "c",
+                "bit": 0
+              }
+            ]
+          },
+          {
+            "type": "MEASURE",
+            "qubit": 1,
+            "destinations": [
+              {
+                "register": "c",
+                "bit": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "classical_output",
+        "message": "Read the input register as c1c0.",
+        "target": {
+          "01": 1
+        },
+        "tolerance": 0.02
+      }
+    ],
+    "hints": [
+      "The target is |−⟩ for phase kickback.",
+      "Interfere the inputs with H(q0) and H(q1).",
+      "Measure q0 and q1 into their matching c bits."
+    ],
+    "successFeedback": "Your circuit satisfies the learning objective.",
+    "failureFeedback": "Compare the checks below, revise your circuit or reasoning, and try again.",
+    "solutionExplanation": "The promised balanced oracle yields input c1c0=01. Only the input register is classified; q2 is the auxiliary qubit.",
+    "prediction": {
+      "kind": "distribution",
+      "labels": [
+        "00",
+        "01",
+        "10",
+        "11"
+      ],
+      "expected": {
+        "00": 0,
+        "01": 1,
+        "10": 0,
+        "11": 0
+      },
+      "tolerance": 0.03,
+      "prompt": "Predict the displayed outcome probabilities (0 to 1) before running.",
+      "displayLabels": {
+        "00": "P(00)",
+        "01": "P(01)",
+        "10": "P(10)",
+        "11": "P(11)"
+      }
+    },
+    "reflection": "Read c1c0, the input bits only. Under the Deutsch–Jozsa promise, 00 identifies a constant function; a nonzero input result identifies a balanced one."
+  },
+  {
+    "id": "m6-experiment",
+    "moduleId": 6,
+    "version": 1,
+    "kind": "circuit",
+    "title": "Amplify |11⟩",
+    "objective": "Explain a phase oracle followed by diffusion.",
+    "difficulty": "intermediate",
+    "instructions": "The starter creates equal amplitudes and marks |11⟩ with CZ. Run it to see that phase marking alone leaves equal probabilities. Append one diffusion step, then predict and Run again. Keep the starter intact.",
+    "initialState": "|00⟩",
+    "starterCircuit": {
+      "num_qubits": 2,
+      "gates": [
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "H",
+          "qubit": 1
+        },
+        {
+          "type": "CZ",
+          "control": 0,
+          "target": 1
+        }
+      ]
+    },
+    "rules": [
+      {
+        "type": "constraints",
+        "message": "Meet the stated circuit constraints.",
+        "prefix": [
+          {
+            "type": "H",
+            "qubit": 0
+          },
+          {
+            "type": "H",
+            "qubit": 1
+          },
+          {
+            "type": "CZ",
+            "control": 0,
+            "target": 1
+          }
+        ],
+        "allowed": [
+          "H",
+          "X",
+          "CZ",
+          "CNOT"
+        ]
+      },
+      {
+        "type": "state_equivalence",
+        "message": "Prepare the required quantum state, including its relative phase.",
+        "target": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "tolerance": 1e-08
+      }
+    ],
+    "hints": [
+      "Reflect marked amplitudes about their mean (1/4).",
+      "Diffusion uses H⊗H, X⊗X, CZ, X⊗X, H⊗H.",
+      "This implementation differs from mathematical diffusion only by global phase."
+    ],
+    "successFeedback": "Your circuit satisfies the learning objective.",
+    "failureFeedback": "Compare the checks below, revise your circuit or reasoning, and try again.",
+    "solutionExplanation": "For N=4 and one marked item, one Grover iteration gives P(11)=1. More iterations can reduce success; this is a small educational search.",
+    "prediction": {
+      "kind": "distribution",
+      "labels": [
+        "00",
+        "01",
+        "10",
+        "11"
+      ],
+      "expected": {
+        "00": 0,
+        "01": 0,
+        "10": 0,
+        "11": 1
+      },
+      "tolerance": 0.03,
+      "prompt": "Predict the displayed outcome probabilities (0 to 1) before running.",
+      "displayLabels": {
+        "00": "P(00)",
+        "01": "P(01)",
+        "10": "P(10)",
+        "11": "P(11)"
+      }
+    },
+    "reflection": "The oracle changes a phase without changing probabilities. Diffusion converts that phase difference into increased marked-state probability."
+  },
+  {
+    "id": "m6-challenge",
+    "moduleId": 6,
+    "version": 1,
+    "kind": "circuit",
+    "title": "Complete the diffusion step",
+    "objective": "Explain a phase oracle followed by diffusion.",
+    "difficulty": "intermediate",
+    "instructions": "The starter creates equal amplitudes and marks |11⟩ with CZ. Run it to see that phase marking alone leaves equal probabilities. Append one diffusion step, then predict and Run again. Keep the starter intact.",
+    "initialState": "|00⟩",
+    "starterCircuit": {
+      "num_qubits": 2,
+      "gates": [
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "H",
+          "qubit": 1
+        },
+        {
+          "type": "CZ",
+          "control": 0,
+          "target": 1
+        }
+      ]
+    },
+    "rules": [
+      {
+        "type": "constraints",
+        "message": "Meet the stated circuit constraints.",
+        "prefix": [
+          {
+            "type": "H",
+            "qubit": 0
+          },
+          {
+            "type": "H",
+            "qubit": 1
+          },
+          {
+            "type": "CZ",
+            "control": 0,
+            "target": 1
+          }
+        ],
+        "allowed": [
+          "H",
+          "X",
+          "CZ",
+          "CNOT"
+        ]
+      },
+      {
+        "type": "state_equivalence",
+        "message": "Prepare the required quantum state, including its relative phase.",
+        "target": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "tolerance": 1e-08
+      }
+    ],
+    "hints": [
+      "Reflect marked amplitudes about their mean (1/4).",
+      "Diffusion uses H⊗H, X⊗X, CZ, X⊗X, H⊗H.",
+      "This implementation differs from mathematical diffusion only by global phase."
+    ],
+    "successFeedback": "Your circuit satisfies the learning objective.",
+    "failureFeedback": "Compare the checks below, revise your circuit or reasoning, and try again.",
+    "solutionExplanation": "For N=4 and one marked item, one Grover iteration gives P(11)=1. More iterations can reduce success; this is a small educational search.",
+    "prediction": {
+      "kind": "distribution",
+      "labels": [
+        "00",
+        "01",
+        "10",
+        "11"
+      ],
+      "expected": {
+        "00": 0,
+        "01": 0,
+        "10": 0,
+        "11": 1
+      },
+      "tolerance": 0.03,
+      "prompt": "Predict the displayed outcome probabilities (0 to 1) before running.",
+      "displayLabels": {
+        "00": "P(00)",
+        "01": "P(01)",
+        "10": "P(10)",
+        "11": "P(11)"
+      }
+    },
+    "reflection": "The oracle changes a phase without changing probabilities. Diffusion converts that phase difference into increased marked-state probability."
+  },
+  {
+    "id": "m7-experiment",
+    "moduleId": 7,
+    "version": 1,
+    "kind": "circuit",
+    "title": "Trace all four correction branches",
+    "objective": "Trace the three-qubit teleportation protocol.",
+    "difficulty": "intermediate",
+    "instructions": "Guided teleportation: keep the protocol scaffold. q0 is the input, q1/q2 share a Bell pair; q0→c0 and q1→c1. Append conditional corrections on Bob q2: X when c1=1 and Z when c0=1, using “Classical registers and conditions” below the gate library. Predict Alice’s c1c0 distribution. Validate checks all four branches and several input states.",
+    "initialState": "|000⟩",
+    "starterCircuit": {
+      "num_qubits": 3,
+      "gates": [
+        {
+          "type": "RY",
+          "qubit": 0,
+          "params": {
+            "theta": 0.73
+          }
+        },
+        {
+          "type": "RZ",
+          "qubit": 0,
+          "params": {
+            "theta": 0.41
+          }
+        },
+        {
+          "type": "H",
+          "qubit": 1
+        },
+        {
+          "type": "CNOT",
+          "control": 1,
+          "target": 2
+        },
+        {
+          "type": "CNOT",
+          "control": 0,
+          "target": 1
+        },
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "MEASURE",
+          "qubit": 0,
+          "destinations": [
+            {
+              "register": "c",
+              "bit": 0
+            }
+          ]
+        },
+        {
+          "type": "MEASURE",
+          "qubit": 1,
+          "destinations": [
+            {
+              "register": "c",
+              "bit": 1
+            }
+          ]
+        }
+      ],
+      "classical_registers": [
+        {
+          "name": "c",
+          "size": 2
+        }
+      ]
+    },
+    "rules": [
+      {
+        "type": "teleportation",
+        "message": "Preserve the protocol scaffold and recover Bob’s input state in every Alice branch.",
+        "prefix": [
+          {
+            "type": "RY",
+            "qubit": 0,
+            "params": {
+              "theta": 0.73
+            }
+          },
+          {
+            "type": "RZ",
+            "qubit": 0,
+            "params": {
+              "theta": 0.41
+            }
+          },
+          {
+            "type": "H",
+            "qubit": 1
+          },
+          {
+            "type": "CNOT",
+            "control": 1,
+            "target": 2
+          },
+          {
+            "type": "CNOT",
+            "control": 0,
+            "target": 1
+          },
+          {
+            "type": "H",
+            "qubit": 0
+          },
+          {
+            "type": "MEASURE",
+            "qubit": 0,
+            "destinations": [
+              {
+                "register": "c",
+                "bit": 0
+              }
+            ]
+          },
+          {
+            "type": "MEASURE",
+            "qubit": 1,
+            "destinations": [
+              {
+                "register": "c",
+                "bit": 1
+              }
+            ]
+          }
+        ],
+        "tolerance": 1e-08
+      }
+    ],
+    "hints": [
+      "Alice’s bits label the correction, not Bob’s amplitudes.",
+      "For c1=1, Bob needs X; for c0=1, Bob needs Z.",
+      "Add X(q2), condition c bit 1 equals 1; then Z(q2), condition c bit 0 equals 1."
+    ],
+    "successFeedback": "Your circuit satisfies the learning objective.",
+    "failureFeedback": "Compare the checks below, revise your circuit or reasoning, and try again.",
+    "solutionExplanation": "Bob recovers the state after classical communication. Alice’s measurements destroy her original copy; no cloning or faster-than-light communication occurs. c1c0: 00→I, 01→Z, 10→X, 11→X then Z.",
+    "prediction": {
+      "kind": "distribution",
+      "labels": [
+        "00",
+        "01",
+        "10",
+        "11"
+      ],
+      "expected": {
+        "00": 0.25,
+        "01": 0.25,
+        "10": 0.25,
+        "11": 0.25
+      },
+      "tolerance": 0.03,
+      "prompt": "Predict the displayed outcome probabilities (0 to 1) before running.",
+      "displayLabels": {
+        "00": "P(00)",
+        "01": "P(01)",
+        "10": "P(10)",
+        "11": "P(11)"
+      }
+    },
+    "reflection": "Alice’s c1c0 bits select Bob’s corrections. They do not encode the amplitudes of the input state. Correct recovery requires both classical bits."
+  },
+  {
+    "id": "m7-challenge",
+    "moduleId": 7,
+    "version": 1,
+    "kind": "circuit",
+    "title": "Choose receiver corrections",
+    "objective": "Map measured bits to receiver corrections using IQLRS ordering.",
+    "difficulty": "intermediate",
+    "instructions": "Guided teleportation: keep the protocol scaffold. q0 is the input, q1/q2 share a Bell pair; q0→c0 and q1→c1. Append conditional corrections on Bob q2: X when c1=1 and Z when c0=1, using “Classical registers and conditions” below the gate library. Predict Alice’s c1c0 distribution. Validate checks all four branches and several input states.",
+    "initialState": "|000⟩",
+    "starterCircuit": {
+      "num_qubits": 3,
+      "gates": [
+        {
+          "type": "RY",
+          "qubit": 0,
+          "params": {
+            "theta": 0.73
+          }
+        },
+        {
+          "type": "RZ",
+          "qubit": 0,
+          "params": {
+            "theta": 0.41
+          }
+        },
+        {
+          "type": "H",
+          "qubit": 1
+        },
+        {
+          "type": "CNOT",
+          "control": 1,
+          "target": 2
+        },
+        {
+          "type": "CNOT",
+          "control": 0,
+          "target": 1
+        },
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "MEASURE",
+          "qubit": 0,
+          "destinations": [
+            {
+              "register": "c",
+              "bit": 0
+            }
+          ]
+        },
+        {
+          "type": "MEASURE",
+          "qubit": 1,
+          "destinations": [
+            {
+              "register": "c",
+              "bit": 1
+            }
+          ]
+        }
+      ],
+      "classical_registers": [
+        {
+          "name": "c",
+          "size": 2
+        }
+      ]
+    },
+    "rules": [
+      {
+        "type": "teleportation",
+        "message": "Preserve the protocol scaffold and recover Bob’s input state in every Alice branch.",
+        "prefix": [
+          {
+            "type": "RY",
+            "qubit": 0,
+            "params": {
+              "theta": 0.73
+            }
+          },
+          {
+            "type": "RZ",
+            "qubit": 0,
+            "params": {
+              "theta": 0.41
+            }
+          },
+          {
+            "type": "H",
+            "qubit": 1
+          },
+          {
+            "type": "CNOT",
+            "control": 1,
+            "target": 2
+          },
+          {
+            "type": "CNOT",
+            "control": 0,
+            "target": 1
+          },
+          {
+            "type": "H",
+            "qubit": 0
+          },
+          {
+            "type": "MEASURE",
+            "qubit": 0,
+            "destinations": [
+              {
+                "register": "c",
+                "bit": 0
+              }
+            ]
+          },
+          {
+            "type": "MEASURE",
+            "qubit": 1,
+            "destinations": [
+              {
+                "register": "c",
+                "bit": 1
+              }
+            ]
+          }
+        ],
+        "tolerance": 1e-08
+      }
+    ],
+    "hints": [
+      "Alice’s bits label the correction, not Bob’s amplitudes.",
+      "For c1=1, Bob needs X; for c0=1, Bob needs Z.",
+      "Add X(q2), condition c bit 1 equals 1; then Z(q2), condition c bit 0 equals 1."
+    ],
+    "successFeedback": "Your circuit satisfies the learning objective.",
+    "failureFeedback": "Compare the checks below, revise your circuit or reasoning, and try again.",
+    "solutionExplanation": "Bob recovers the state after classical communication. Alice’s measurements destroy her original copy; no cloning or faster-than-light communication occurs. c1c0: 00→I, 01→Z, 10→X, 11→X then Z.",
+    "prediction": {
+      "kind": "distribution",
+      "labels": [
+        "00",
+        "01",
+        "10",
+        "11"
+      ],
+      "expected": {
+        "00": 0.25,
+        "01": 0.25,
+        "10": 0.25,
+        "11": 0.25
+      },
+      "tolerance": 0.03,
+      "prompt": "Predict the displayed outcome probabilities (0 to 1) before running.",
+      "displayLabels": {
+        "00": "P(00)",
+        "01": "P(01)",
+        "10": "P(10)",
+        "11": "P(11)"
+      }
+    },
+    "reflection": "Alice’s c1c0 bits select Bob’s corrections. They do not encode the amplitudes of the input state. Correct recovery requires both classical bits."
+  },
+  {
+    "id": "m8-experiment",
+    "moduleId": 8,
+    "version": 1,
+    "kind": "conceptual",
+    "title": "Compare useful and unhelpful orders",
+    "objective": "Trace the reduction from factoring to order finding.",
+    "difficulty": "advanced",
+    "instructions": "Conceptual exercise; no Shor circuit is executed. For N=15, a=2, enter powers for exponents 1–4, order and the two gcd factors (ascending). Compare a=14: enter its order and gcd(14^(r/2)−1,15), gcd(14^(r/2)+1,15). Fourier samples inform order inference; this arithmetic is classical post-processing.",
+    "initialState": "Conceptual arithmetic",
+    "starterCircuit": {
+      "num_qubits": 1,
+      "gates": []
+    },
+    "rules": [
+      {
+        "type": "conceptual",
+        "message": "Verify modular powers, the least positive order and gcd factors.",
+        "target": {
+          "power1": 2,
+          "power2": 4,
+          "power3": 8,
+          "power4": 1,
+          "order": 4,
+          "factor1": 3,
+          "factor2": 5,
+          "order14": 2,
+          "gcdMinus14": 1,
+          "gcdPlus14": 15
+        }
+      }
+    ],
+    "hints": [
+      "Multiply by a and reduce modulo 15 until the first 1.",
+      "For a=2, the powers are 2,4,8,1.",
+      "r=4 gives gcd(3,15)=3 and gcd(5,15)=5; a=14 gives trivial gcds."
+    ],
+    "successFeedback": "Order finding and classical factor extraction completed.",
+    "failureFeedback": "Compare the checks below, revise your circuit or reasoning, and try again.",
+    "solutionExplanation": "The verified order r=4 yields factors 3 and 5. The a=14 case has order 2 but only trivial gcds 1 and 15. This traces order finding and factor extraction; it does not execute full Shor.",
+    "prediction": {
+      "kind": "answer",
+      "labels": [
+        "power1",
+        "power2",
+        "power3",
+        "power4",
+        "order",
+        "factor1",
+        "factor2",
+        "order14",
+        "gcdMinus14",
+        "gcdPlus14"
+      ],
+      "expected": {
+        "power1": 2,
+        "power2": 4,
+        "power3": 8,
+        "power4": 1,
+        "order": 4,
+        "factor1": 3,
+        "factor2": 5,
+        "order14": 2,
+        "gcdMinus14": 1,
+        "gcdPlus14": 15
+      },
+      "tolerance": 0.03,
+      "prompt": "Commit your arithmetic answers, then check your reasoning.",
+      "displayLabels": {
+        "power1": "2¹ mod 15",
+        "power2": "2² mod 15",
+        "power3": "2³ mod 15",
+        "power4": "2⁴ mod 15",
+        "order": "Order of 2 mod 15",
+        "factor1": "Smaller factor",
+        "factor2": "Larger factor",
+        "order14": "Order of 14 mod 15",
+        "gcdMinus14": "a=14: gcd(a^(r/2)−1, 15)",
+        "gcdPlus14": "a=14: gcd(a^(r/2)+1, 15)"
+      }
+    },
+    "reflection": "This is classical modular arithmetic illustrating the factoring reduction, not a quantum Shor execution."
+  },
+  {
+    "id": "m8-challenge",
+    "moduleId": 8,
+    "version": 1,
+    "kind": "conceptual",
+    "title": "Trace factoring from an order",
+    "objective": "Distinguish the roles of modular exponentiation, QFT and classical post-processing.",
+    "difficulty": "advanced",
+    "instructions": "Conceptual exercise; no Shor circuit is executed. For N=15, a=2, enter powers for exponents 1–4, order and the two gcd factors (ascending). Compare a=14: enter its order and gcd(14^(r/2)−1,15), gcd(14^(r/2)+1,15). Fourier samples inform order inference; this arithmetic is classical post-processing.",
+    "initialState": "Conceptual arithmetic",
+    "starterCircuit": {
+      "num_qubits": 1,
+      "gates": []
+    },
+    "rules": [
+      {
+        "type": "conceptual",
+        "message": "Verify modular powers, the least positive order and gcd factors.",
+        "target": {
+          "power1": 2,
+          "power2": 4,
+          "power3": 8,
+          "power4": 1,
+          "order": 4,
+          "factor1": 3,
+          "factor2": 5,
+          "order14": 2,
+          "gcdMinus14": 1,
+          "gcdPlus14": 15
+        }
+      }
+    ],
+    "hints": [
+      "Multiply by a and reduce modulo 15 until the first 1.",
+      "For a=2, the powers are 2,4,8,1.",
+      "r=4 gives gcd(3,15)=3 and gcd(5,15)=5; a=14 gives trivial gcds."
+    ],
+    "successFeedback": "Order finding and classical factor extraction completed.",
+    "failureFeedback": "Compare the checks below, revise your circuit or reasoning, and try again.",
+    "solutionExplanation": "The verified order r=4 yields factors 3 and 5. The a=14 case has order 2 but only trivial gcds 1 and 15. This traces order finding and factor extraction; it does not execute full Shor.",
+    "prediction": {
+      "kind": "answer",
+      "labels": [
+        "power1",
+        "power2",
+        "power3",
+        "power4",
+        "order",
+        "factor1",
+        "factor2",
+        "order14",
+        "gcdMinus14",
+        "gcdPlus14"
+      ],
+      "expected": {
+        "power1": 2,
+        "power2": 4,
+        "power3": 8,
+        "power4": 1,
+        "order": 4,
+        "factor1": 3,
+        "factor2": 5,
+        "order14": 2,
+        "gcdMinus14": 1,
+        "gcdPlus14": 15
+      },
+      "tolerance": 0.03,
+      "prompt": "Commit your arithmetic answers, then check your reasoning.",
+      "displayLabels": {
+        "power1": "2¹ mod 15",
+        "power2": "2² mod 15",
+        "power3": "2³ mod 15",
+        "power4": "2⁴ mod 15",
+        "order": "Order of 2 mod 15",
+        "factor1": "Smaller factor",
+        "factor2": "Larger factor",
+        "order14": "Order of 14 mod 15",
+        "gcdMinus14": "a=14: gcd(a^(r/2)−1, 15)",
+        "gcdPlus14": "a=14: gcd(a^(r/2)+1, 15)"
+      }
+    },
+    "reflection": "This is classical modular arithmetic illustrating the factoring reduction, not a quantum Shor execution."
+  }
+]

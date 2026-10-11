@@ -1,3 +1,4 @@
+import Activities from "../components/Activities";
 import { ListenButton, NarratorOnly } from "@/components/narration/provider";
 import { moduleNarration } from "@/lib/narration/content";
 import { StateExplorer } from "@/components/state-explorer";
@@ -15,12 +16,6 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
   if (!lesson) notFound();
   const narration = moduleNarration(lesson);
   const owner = `lesson-${lesson.id}`;
-  const challengeHref =
-    lesson.id === 4
-      ? "/builder?challenge=bell"
-      : lesson.id === 6
-        ? "/builder?challenge=grover"
-        : "/builder";
   return (
     <main className="page">
       <Link
@@ -56,6 +51,7 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
             </a>
           ))}
           <a href="#example">Worked example</a>
+          <a href="#learning-activities">Experiments and challenges</a>
           <a href="#knowledge-check">Knowledge check</a>
         </nav>
         <article className="lesson-content">
@@ -115,17 +111,9 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
                 <LearningText text={lesson.keyTakeaways} />
               </p>
             </div>
-            {(lesson.tryInBuilder || lesson.id === 4) && (
-              <Button asChild className="mt-6">
-                <Link href={challengeHref}>
-                  {lesson.id === 4 || lesson.id === 6
-                    ? "Open learning challenge"
-                    : "Try in the circuit builder"}{" "}
-                  ↗
-                </Link>
-              </Button>
-            )}
+
           </section>
+          <Activities moduleId={lesson.id} experiments={lesson.experiments} challenges={lesson.challenges} />
           <Quiz moduleId={lesson.id} key={lesson.id} questions={lesson.questions} />
           <div className="flex flex-wrap justify-between gap-4 pt-8">
             <Button asChild variant="secondary">

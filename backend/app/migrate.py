@@ -19,7 +19,7 @@ def migrate():
         if inspector.has_table("users") and "user_id" not in {c['name'] for c in inspector.get_columns('users')}:
             from app.legacy_migration import migrate_legacy
             migrate_legacy(connection)
-        Base.metadata.create_all(connection, tables=[t for t in Base.metadata.sorted_tables if t.name != "hardware_jobs"])
+        Base.metadata.create_all(connection, tables=[t for t in Base.metadata.sorted_tables if t.name not in {"hardware_jobs", "challenge_workspaces", "challenge_attempts"}])
         connection.execute(text("ALTER TABLE users ALTER COLUMN otp_code TYPE VARCHAR(64)"))
         connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_attempts INTEGER NOT NULL DEFAULT 0"))
         # Previously stored plaintext codes must no longer be accepted.
@@ -34,7 +34,7 @@ def migrate():
         config.attributes["connection"] = connection
         command.upgrade(config, "head")
         connection.execute(text("INSERT INTO schema_migrations(version) VALUES (2) ON CONFLICT DO NOTHING"))
-    print("Database migrated to version 2; curriculum and hardware persistence ready.")
+    print("Database migrations complete; curriculum, hardware and learning activities ready.")
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ from app.core.database import get_db
 from app.core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import circuits, ai, auth, progress, speech, hardware
+from app.api import circuits, ai, auth, progress, speech, hardware, learning_challenges
 from app.api.dashboard import router as dashboard_router
 
 app = FastAPI(
@@ -29,6 +29,7 @@ app.include_router(circuits.router, prefix="/api/circuits", tags=["circuits"])
 app.include_router(ai.router, prefix="/api/ai", tags=["ai"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(progress.router)
+app.include_router(learning_challenges.router)
 
 app.include_router(dashboard_router)
 
@@ -47,3 +48,16 @@ def ready(db: Session = Depends(get_db)):
     except Exception:
         raise HTTPException(503, "Database unavailable or migrations missing") from None
     return {"status": "ready"}
+
+
+@app.middleware("http")
+async def bound_challenge_body(request, call_next):
+    if request.url.path.startswith("/api/challenges") and request.method in {"POST", "PUT"}:
+        from starlette.responses import JSONResponse
+        body = bytearray()
+        async for chunk in request.stream():
+            body.extend(chunk)
+            if len(body) > 32768:
+                return JSONResponse({"detail": "Activity request exceeds 32 KiB."}, status_code=413)
+        request._body = bytes(body)
+    return await call_next(request)

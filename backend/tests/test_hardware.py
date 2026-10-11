@@ -602,7 +602,7 @@ def test_migration_creates_owned_table_and_downgrades(sessions):
             "script_location", str(Path(__file__).resolve().parents[1] / "migrations")
         )
         config.attributes["connection"] = connection
-        command.upgrade(config, "head")
+        command.upgrade(config, "0002_hardware_jobs")
         inspector = inspect(connection)
         assert inspector.has_table("hardware_jobs")
         assert (
@@ -611,7 +611,7 @@ def test_migration_creates_owned_table_and_downgrades(sessions):
         assert set(
             inspector.get_unique_constraints("hardware_jobs")[0]["column_names"]
         ) == {"user_id", "idempotency_key"}
-        command.upgrade(config, "head")
+        command.upgrade(config, "0002_hardware_jobs")
         command.downgrade(config, "base")
         assert not inspect(connection).has_table("hardware_jobs")
 

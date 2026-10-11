@@ -42,7 +42,8 @@ def migrate_legacy(connection):
     connection.execute(text(f'REVOKE ALL ON SCHEMA {quote(archive)} FROM PUBLIC'))
     for name in tables:
         connection.execute(text(f'ALTER TABLE {quote(source_schema)}.{quote(name)} SET SCHEMA {quote(archive)}'))
-    Base.metadata.create_all(connection)
+    # Alembic owns these additive tables; creating them here would collide with upgrades.
+    Base.metadata.create_all(connection, tables=[t for t in Base.metadata.sorted_tables if t.name not in {"hardware_jobs", "challenge_workspaces", "challenge_attempts"}])
     question_order = defaultdict(int)
     author_inserted = False
     for target in Base.metadata.sorted_tables:

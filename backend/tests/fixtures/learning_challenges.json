@@ -1,0 +1,680 @@
+{
+  "m1-experiment": {
+    "circuit": {
+      "num_qubits": 1,
+      "gates": [
+        {
+          "type": "H",
+          "qubit": 0
+        }
+      ],
+      "shots": 256,
+      "seed": 17
+    },
+    "prediction": {
+      "0": 0.5,
+      "1": 0.5
+    }
+  },
+  "m1-challenge": {
+    "circuit": {
+      "num_qubits": 1,
+      "gates": [
+        {
+          "type": "X",
+          "qubit": 0
+        }
+      ],
+      "shots": 256,
+      "seed": 17
+    },
+    "prediction": {
+      "0": 0,
+      "1": 1
+    }
+  },
+  "m2-experiment": {
+    "circuit": {
+      "num_qubits": 2,
+      "gates": [
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "H",
+          "qubit": 1
+        }
+      ],
+      "shots": 256,
+      "seed": 17
+    },
+    "prediction": {
+      "00": 0.25,
+      "01": 0.25,
+      "10": 0.25,
+      "11": 0.25
+    }
+  },
+  "m2-challenge": {
+    "circuit": {
+      "num_qubits": 2,
+      "gates": [
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "H",
+          "qubit": 1
+        },
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "H",
+          "qubit": 1
+        }
+      ],
+      "shots": 256,
+      "seed": 17
+    },
+    "prediction": {
+      "00": 1,
+      "01": 0,
+      "10": 0,
+      "11": 0
+    }
+  },
+  "m3-experiment": {
+    "circuit": {
+      "num_qubits": 1,
+      "gates": [
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "MEASURE",
+          "qubit": 0
+        }
+      ],
+      "shots": 256,
+      "seed": 17
+    },
+    "prediction": {
+      "0": 0.5,
+      "1": 0.5
+    }
+  },
+  "m3-challenge": {
+    "circuit": {
+      "num_qubits": 1,
+      "gates": [
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "MEASURE",
+          "qubit": 0
+        }
+      ],
+      "shots": 256,
+      "seed": 17
+    },
+    "prediction": {
+      "0": 0.5,
+      "1": 0.5
+    }
+  },
+  "m4-experiment": {
+    "circuit": {
+      "num_qubits": 2,
+      "gates": [
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "CNOT",
+          "control": 0,
+          "target": 1
+        },
+        {
+          "type": "CNOT",
+          "control": 0,
+          "target": 1
+        },
+        {
+          "type": "H",
+          "qubit": 0
+        }
+      ],
+      "shots": 256,
+      "seed": 17
+    },
+    "prediction": {
+      "00": 1,
+      "01": 0,
+      "10": 0,
+      "11": 0
+    }
+  },
+  "m4-challenge": {
+    "circuit": {
+      "num_qubits": 2,
+      "gates": [
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "CNOT",
+          "control": 0,
+          "target": 1
+        }
+      ],
+      "shots": 256,
+      "seed": 17
+    },
+    "prediction": {
+      "00": 0.5,
+      "01": 0,
+      "10": 0,
+      "11": 0.5
+    }
+  },
+  "m5-experiment": {
+    "circuit": {
+      "num_qubits": 3,
+      "gates": [
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "H",
+          "qubit": 1
+        },
+        {
+          "type": "X",
+          "qubit": 2
+        },
+        {
+          "type": "H",
+          "qubit": 2
+        },
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "H",
+          "qubit": 1
+        },
+        {
+          "type": "MEASURE",
+          "qubit": 0,
+          "destinations": [
+            {
+              "register": "c",
+              "bit": 0
+            }
+          ]
+        },
+        {
+          "type": "MEASURE",
+          "qubit": 1,
+          "destinations": [
+            {
+              "register": "c",
+              "bit": 1
+            }
+          ]
+        }
+      ],
+      "classical_registers": [
+        {
+          "name": "c",
+          "size": 2
+        }
+      ],
+      "shots": 256,
+      "seed": 17
+    },
+    "prediction": {
+      "00": 1,
+      "01": 0,
+      "10": 0,
+      "11": 0
+    }
+  },
+  "m5-challenge": {
+    "circuit": {
+      "num_qubits": 3,
+      "gates": [
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "H",
+          "qubit": 1
+        },
+        {
+          "type": "X",
+          "qubit": 2
+        },
+        {
+          "type": "H",
+          "qubit": 2
+        },
+        {
+          "type": "CNOT",
+          "control": 0,
+          "target": 2
+        },
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "H",
+          "qubit": 1
+        },
+        {
+          "type": "MEASURE",
+          "qubit": 0,
+          "destinations": [
+            {
+              "register": "c",
+              "bit": 0
+            }
+          ]
+        },
+        {
+          "type": "MEASURE",
+          "qubit": 1,
+          "destinations": [
+            {
+              "register": "c",
+              "bit": 1
+            }
+          ]
+        }
+      ],
+      "classical_registers": [
+        {
+          "name": "c",
+          "size": 2
+        }
+      ],
+      "shots": 256,
+      "seed": 17
+    },
+    "prediction": {
+      "00": 0,
+      "01": 1,
+      "10": 0,
+      "11": 0
+    }
+  },
+  "m6-experiment": {
+    "circuit": {
+      "num_qubits": 2,
+      "gates": [
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "H",
+          "qubit": 1
+        },
+        {
+          "type": "CZ",
+          "control": 0,
+          "target": 1
+        },
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "H",
+          "qubit": 1
+        },
+        {
+          "type": "X",
+          "qubit": 0
+        },
+        {
+          "type": "X",
+          "qubit": 1
+        },
+        {
+          "type": "CZ",
+          "control": 0,
+          "target": 1
+        },
+        {
+          "type": "X",
+          "qubit": 0
+        },
+        {
+          "type": "X",
+          "qubit": 1
+        },
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "H",
+          "qubit": 1
+        }
+      ],
+      "shots": 256,
+      "seed": 17
+    },
+    "prediction": {
+      "00": 0,
+      "01": 0,
+      "10": 0,
+      "11": 1
+    }
+  },
+  "m6-challenge": {
+    "circuit": {
+      "num_qubits": 2,
+      "gates": [
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "H",
+          "qubit": 1
+        },
+        {
+          "type": "CZ",
+          "control": 0,
+          "target": 1
+        },
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "H",
+          "qubit": 1
+        },
+        {
+          "type": "X",
+          "qubit": 0
+        },
+        {
+          "type": "X",
+          "qubit": 1
+        },
+        {
+          "type": "CZ",
+          "control": 0,
+          "target": 1
+        },
+        {
+          "type": "X",
+          "qubit": 0
+        },
+        {
+          "type": "X",
+          "qubit": 1
+        },
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "H",
+          "qubit": 1
+        }
+      ],
+      "shots": 256,
+      "seed": 17
+    },
+    "prediction": {
+      "00": 0,
+      "01": 0,
+      "10": 0,
+      "11": 1
+    }
+  },
+  "m7-experiment": {
+    "circuit": {
+      "num_qubits": 3,
+      "gates": [
+        {
+          "type": "RY",
+          "qubit": 0,
+          "params": {
+            "theta": 0.73
+          }
+        },
+        {
+          "type": "RZ",
+          "qubit": 0,
+          "params": {
+            "theta": 0.41
+          }
+        },
+        {
+          "type": "H",
+          "qubit": 1
+        },
+        {
+          "type": "CNOT",
+          "control": 1,
+          "target": 2
+        },
+        {
+          "type": "CNOT",
+          "control": 0,
+          "target": 1
+        },
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "MEASURE",
+          "qubit": 0,
+          "destinations": [
+            {
+              "register": "c",
+              "bit": 0
+            }
+          ]
+        },
+        {
+          "type": "MEASURE",
+          "qubit": 1,
+          "destinations": [
+            {
+              "register": "c",
+              "bit": 1
+            }
+          ]
+        },
+        {
+          "type": "X",
+          "qubit": 2,
+          "condition": {
+            "register": "c",
+            "bit": 1,
+            "operator": "eq",
+            "value": 1
+          }
+        },
+        {
+          "type": "Z",
+          "qubit": 2,
+          "condition": {
+            "register": "c",
+            "bit": 0,
+            "operator": "eq",
+            "value": 1
+          }
+        }
+      ],
+      "classical_registers": [
+        {
+          "name": "c",
+          "size": 2
+        }
+      ],
+      "shots": 256,
+      "seed": 17
+    },
+    "prediction": {
+      "00": 0.25,
+      "01": 0.25,
+      "10": 0.25,
+      "11": 0.25
+    }
+  },
+  "m7-challenge": {
+    "circuit": {
+      "num_qubits": 3,
+      "gates": [
+        {
+          "type": "RY",
+          "qubit": 0,
+          "params": {
+            "theta": 0.73
+          }
+        },
+        {
+          "type": "RZ",
+          "qubit": 0,
+          "params": {
+            "theta": 0.41
+          }
+        },
+        {
+          "type": "H",
+          "qubit": 1
+        },
+        {
+          "type": "CNOT",
+          "control": 1,
+          "target": 2
+        },
+        {
+          "type": "CNOT",
+          "control": 0,
+          "target": 1
+        },
+        {
+          "type": "H",
+          "qubit": 0
+        },
+        {
+          "type": "MEASURE",
+          "qubit": 0,
+          "destinations": [
+            {
+              "register": "c",
+              "bit": 0
+            }
+          ]
+        },
+        {
+          "type": "MEASURE",
+          "qubit": 1,
+          "destinations": [
+            {
+              "register": "c",
+              "bit": 1
+            }
+          ]
+        },
+        {
+          "type": "X",
+          "qubit": 2,
+          "condition": {
+            "register": "c",
+            "bit": 1,
+            "operator": "eq",
+            "value": 1
+          }
+        },
+        {
+          "type": "Z",
+          "qubit": 2,
+          "condition": {
+            "register": "c",
+            "bit": 0,
+            "operator": "eq",
+            "value": 1
+          }
+        }
+      ],
+      "classical_registers": [
+        {
+          "name": "c",
+          "size": 2
+        }
+      ],
+      "shots": 256,
+      "seed": 17
+    },
+    "prediction": {
+      "00": 0.25,
+      "01": 0.25,
+      "10": 0.25,
+      "11": 0.25
+    }
+  },
+  "m8-experiment": {
+    "circuit": {
+      "num_qubits": 1,
+      "gates": [],
+      "shots": 256,
+      "seed": 17
+    },
+    "prediction": {
+      "power1": 2,
+      "power2": 4,
+      "power3": 8,
+      "power4": 1,
+      "order": 4,
+      "factor1": 3,
+      "factor2": 5,
+      "order14": 2,
+      "gcdMinus14": 1,
+      "gcdPlus14": 15
+    }
+  },
+  "m8-challenge": {
+    "circuit": {
+      "num_qubits": 1,
+      "gates": [],
+      "shots": 256,
+      "seed": 17
+    },
+    "prediction": {
+      "power1": 2,
+      "power2": 4,
+      "power3": 8,
+      "power4": 1,
+      "order": 4,
+      "factor1": 3,
+      "factor2": 5,
+      "order14": 2,
+      "gcdMinus14": 1,
+      "gcdPlus14": 15
+    }
+  }
+}
