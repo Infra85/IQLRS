@@ -1,5 +1,6 @@
 "use client";
 
+import { JourneyOverview } from "@/app/learn/components/LessonJourney";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -117,7 +118,7 @@ export default function DashboardPage() {
     { label: "Quiz score", value: `${statistics.quiz_score}%` },
     { label: "Simulations", value: statistics.simulations.toLocaleString() },
     { label: "Learning streak", value: `${statistics.streak} days` },
-    { label: "Modules completed", value: statistics.modules_completed.toLocaleString() },
+    { label: "Quizzes passed", value: statistics.modules_completed.toLocaleString() },
   ];
   return (
     <main className="page">
@@ -131,6 +132,7 @@ export default function DashboardPage() {
           </Button>
         }
       />
+      <JourneyOverview />
       <section className="stat-grid" aria-label="Learning statistics">
         {stats.map((stat) => (
           <div className="stat" key={stat.label}>
@@ -146,7 +148,7 @@ export default function DashboardPage() {
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <section>
           <div className="flex items-center justify-between mb-5 gap-4">
-            <h2 className="section-title">Your course progress</h2>
+            <h2 className="section-title">Your course quiz progress</h2>
             <Link
               className="text-sm text-slate-300 hover:text-white"
               href="/learn"

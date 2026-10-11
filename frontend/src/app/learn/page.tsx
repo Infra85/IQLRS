@@ -1,3 +1,4 @@
+import { JourneyOverview } from "@/app/learn/components/LessonJourney";
 import { ListenButton, NarratorOnly } from "@/components/narration/provider";
 import { modules } from "./modules";
 import ModuleItem from "./components/ModuleItem";
@@ -33,6 +34,7 @@ export default function LearnPage() {
         <span>01—04 / Foundations</span>
         <span>05—08 / Algorithms + systems</span>
       </div>
+      <JourneyOverview />
       <section className="module-index" aria-label="Learning modules">
         {modules.map((module, index) => (
           <ModuleItem key={module.id} module={module} index={index} />

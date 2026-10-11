@@ -14,7 +14,7 @@ export type ChallengeDefinition = {
   prediction: { kind: 'distribution' | 'answer'; labels: string[]; displayLabels: Record<string,string>; tolerance: number; prompt: string };
 };
 export type Attempt = { id: string; number: number; hintsUsed: number; score: number; passed: boolean; status: string; version: number };
-export type ActivityDetail = { definition: ChallengeDefinition; completed: boolean; bestScore: number; history: Attempt[]; hints: string[]; workspace: { revision: string; circuit: CircuitRequest; prediction: Record<string,number>; execution: Execution | null; comparison: Comparison | null } | null };
+export type ActivityDetail = { definition: ChallengeDefinition; completed: boolean; bestScore: number; history: Attempt[]; hints: string[]; workspace: { revision: string; circuit: CircuitRequest; prediction: Record<string,number>; execution: Execution | null; feedback?: ValidationResult | null; comparison: Comparison | null } | null };
 
 export function circuitIdentity(circuit: CircuitRequest): string {
   return JSON.stringify({gates:circuit.gates,num_qubits:circuit.num_qubits,classical_registers:circuit.classical_registers ?? null,shots:circuit.shots ?? 1024});

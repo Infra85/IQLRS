@@ -1,6 +1,8 @@
 """Learning progress API."""
 
 from uuid import UUID
+from typing import Literal
+from app.services.lesson_journey import sequence, journey, journeys
 from datetime import datetime, timezone
 from pydantic import BaseModel, Field
 from app.models.assessment import AssessmentAttempt
@@ -93,6 +95,61 @@ def submit_quiz(number: int, payload: QuizSubmission, current_user: User = Depen
         db.add(CourseEnrollment(user_id=current_user.user_id, course_id=COURSE_ID))
     db.commit()
     return {"score": score, "total": total, "completion_pct": progress.completion_pct, "status": progress.status}
+
+
+class JourneyUpdate(BaseModel):
+    step_id: str = Field(min_length=1, max_length=100)
+    action: Literal["start", "complete"]
+    model_config = {"extra": "forbid"}
+
+
+@router.get("/journey")
+def get_journeys(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return {"modules": journeys(db, current_user.user_id)}
+
+
+@router.get("/lessons/{number}/sequence")
+def get_sequence(number: int):
+    lesson = next((m for m in MODULES if m["id"] == number), None)
+    if not lesson:
+        raise HTTPException(404, "Lesson not found")
+    return {"steps": sequence(lesson)}
+
+
+@router.put("/lessons/{number}/journey")
+def update_journey(number: int, payload: JourneyUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    lesson = next((m for m in MODULES if m["id"] == number), None)
+    if not lesson:
+        raise HTTPException(404, "Lesson not found")
+    step = next((s for s in sequence(lesson) if s["id"] == payload.step_id), None)
+    if not step:
+        raise HTTPException(422, "Unknown lesson step")
+    if payload.action == "complete" and step["kind"] not in {"section", "reflection"}:
+        raise HTTPException(422, "Complete this activity through its existing assessment")
+    if not db.get(LearningModule, module_id(number)):
+        raise HTTPException(503, "Curriculum unavailable. Run database migrations.")
+    db.query(User).filter_by(user_id=current_user.user_id).with_for_update().one()
+    state = journey(db, current_user.user_id, lesson)
+    if payload.action == "complete" and step["kind"] == "reflection":
+        activity = next(s for s in state["steps"] if s["id"] == step["activityId"])
+        if activity["status"] != "completed":
+            raise HTTPException(409, "Finish and validate the experiment before recording your reflection")
+    now = datetime.now(timezone.utc)
+    record = db.query(ModuleProgress).filter_by(user_id=current_user.user_id, module_id=module_id(number)).first()
+    if not record:
+        record = ModuleProgress(user_id=current_user.user_id, module_id=module_id(number), started_at=now)
+        db.add(record)
+    saved = record.journey or {}
+    if saved.get("version") != lesson["curriculumVersion"]:
+        saved = {}
+    started = set(saved.get("started", [])) | {payload.step_id}
+    completed = set(saved.get("completed", []))
+    if payload.action == "complete":
+        completed.add(payload.step_id)
+    record.journey = dict(version=lesson["curriculumVersion"], started=sorted(started), completed=sorted(completed), current=payload.step_id)
+    record.last_accessed_at = now
+    db.commit()
+    return next(r for r in journeys(db, current_user.user_id) if r["moduleId"] == number)
 
 
 @router.get("/{user_id}")

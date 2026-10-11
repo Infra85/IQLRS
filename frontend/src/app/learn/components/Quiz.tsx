@@ -1,6 +1,7 @@
 "use client";
 import { ListenButton, NarratorOnly } from "@/components/narration/provider";
 import { apiFetch } from "@/lib/api";
+import { NextJourneyActivity } from "./LessonJourney";
 import { useState } from "react";
 import type { Question } from "../modules";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,8 @@ export default function Quiz({ questions, moduleId }: { questions: Question[]; m
     try {
       if (localStorage.getItem("access_token")) {
         await apiFetch(`/api/progress/lessons/${moduleId}/quiz`, {method: "POST", body: JSON.stringify({answers})});
-        setSaveMessage("Your result is saved to your dashboard.");
+        setSaveMessage("Your quiz result is saved. Continue to the challenge below; the guided journey tracks full module completion.");
+        window.dispatchEvent(new Event("lesson-progress"));
       } else { setSaveMessage("Sign in to save your learning progress."); }
       setSubmitted(true);
     } catch(error) { setSaveError(true); setSaveMessage(error instanceof Error ? error.message : "Unable to save progress. Please retry."); }
@@ -122,6 +124,7 @@ export default function Quiz({ questions, moduleId }: { questions: Question[]; m
               ? "Ready for the next concept."
               : "Review the explanations above, then try again."}
           </Status>
+          <NextJourneyActivity />
           <ListenButton
             owner="quiz-score"
             label="Listen to feedback"

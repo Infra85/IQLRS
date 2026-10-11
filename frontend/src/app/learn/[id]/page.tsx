@@ -1,3 +1,4 @@
+import { LessonJourney, ReadingProgress, Reflections } from "../components/LessonJourney";
 import Activities from "../components/Activities";
 import { ListenButton, NarratorOnly } from "@/components/narration/provider";
 import { moduleNarration } from "@/lib/narration/content";
@@ -41,6 +42,7 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
           <p>Read aloud · Includes explanations, notation, and examples.</p>
         </div>
       </NarratorOnly>
+      <LessonJourney moduleId={lesson.id} key={lesson.id}>
       <div className="lesson-layout">
         <nav className="lesson-aside" aria-label="Lesson sections">
           <p className="technical mb-3">In this module</p>
@@ -67,6 +69,7 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
             <p className="leading-8 text-slate-300">
               <LearningText text={lesson.objectives} />
             </p>
+            <ReadingProgress id="objectives" />
           </section>
           {lesson.sections.map((section, index) => (
             <section
@@ -85,6 +88,7 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
                 <LearningText text={section.description} />
               </p>
               <Diagram label={section.diagram} index={index} />
+              <ReadingProgress id={`concept-${index}`} />
             </section>
           ))}
           <section id="example" className="lesson-section">
@@ -112,9 +116,12 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
               </p>
             </div>
 
+            <ReadingProgress id="example" />
           </section>
-          <Activities moduleId={lesson.id} experiments={lesson.experiments} challenges={lesson.challenges} />
+          <Activities moduleId={lesson.id} experiments={lesson.experiments} challenges={[]} />
+          <Reflections />
           <Quiz moduleId={lesson.id} key={lesson.id} questions={lesson.questions} />
+          <Activities moduleId={lesson.id} experiments={[]} challenges={lesson.challenges} />
           <div className="flex flex-wrap justify-between gap-4 pt-8">
             <Button asChild variant="secondary">
               <Link href={lesson.id > 1 ? `/learn/${lesson.id - 1}` : "/learn"}>
@@ -130,7 +137,7 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
                 }
               >
                 {lesson.id < modules.length
-                  ? "Next module"
+                  ? "Preview next module"
                   : "Start an experiment"}{" "}
                 →
               </Link>
@@ -138,6 +145,7 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
           </div>
         </article>
       </div>
+      </LessonJourney>
     </main>
   );
 }

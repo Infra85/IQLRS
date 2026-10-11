@@ -43,7 +43,7 @@ const modules = require('../../../backend/data/modules.json');
       assert.equal(await page.locator('input[type=radio]:checked').count(),0);
       for (const activity of [...lesson.experiments, ...lesson.challenges]) {
         const expected=`/builder?module=${lesson.id}&challenge=${activity.id}`;
-        const builder = page.locator(`#learning-activities a[href="${expected}"]`);
+        const builder = page.locator(`:is(#learning-activities, #lesson-challenges) a[href="${expected}"]`);
         await builder.waitFor();
         assert.equal(await builder.count(),1);
         await builder.click();

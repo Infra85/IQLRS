@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.services.curriculum import module_id
+from app.services.lesson_journey import journeys
 from app.dependencies import get_current_user
 from app.models import User, Course, CourseEnrollment, ModuleProgress, AssessmentAttempt, SimulationRun, Circuit
 
@@ -13,6 +15,7 @@ router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 @router.get("/me")
 def get_dashboard(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     uid = current_user.user_id
+    guided = {module_id(m["moduleId"]): m for m in journeys(db, uid)}
     progress = db.query(ModuleProgress).filter_by(user_id=uid).all()
     attempts = db.query(AssessmentAttempt).filter_by(user_id=uid, status="submitted").all()
     runs = db.query(SimulationRun).filter_by(user_id=uid, status="completed")
@@ -25,7 +28,10 @@ def get_dashboard(current_user: User = Depends(get_current_user), db: Session = 
               for r in runs.order_by(SimulationRun.completed_at.desc()).limit(10)]
     for p in progress:
         if p.last_accessed_at:
-            recent.append({"title": f"{p.module.title} · {p.status.replace('_', ' ')}", "at": p.last_accessed_at, "href": "/learn"})
+            row = guided.get(p.module_id)
+            status = row["status"] if row else p.status
+            href = f"/learn/{row['moduleId']}#guided-journey" if row else "/learn"
+            recent.append({"title": f"{p.module.title} · {status.replace('_', ' ')}", "at": p.last_accessed_at, "href": href})
     recent.sort(key=lambda item: item["at"], reverse=True)
     dates = {r[0].date() for r in runs.with_entities(SimulationRun.completed_at) if r[0]}
     dates |= {a.submitted_at.date() for a in attempts if a.submitted_at}

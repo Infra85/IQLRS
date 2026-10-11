@@ -69,7 +69,7 @@ async function complete(id){
 test('all eight lessons expose both stable curriculum activity links',async()=>{
   for(const m of modules){
     await page.goto(`${base}/learn/${m.id}`);
-    for(const a of [...m.experiments,...m.challenges])assert.equal(await page.locator(`#learning-activities a[href="/builder?module=${m.id}&challenge=${a.id}"]`).count(),1);
+    for(const a of [...m.experiments,...m.challenges])assert.equal(await page.locator(`:is(#learning-activities, #lesson-challenges) a[href="/builder?module=${m.id}&challenge=${a.id}"]`).count(),1);
   }
 });
 
@@ -97,7 +97,7 @@ test('Bell learner path: wrong circuit, hint, edit, prediction, run, semantic va
   await page.getByRole('button',{name:'Reset to starter',exact:true}).click();
   await page.getByText(`Attempt history (${baseline.history.length+2})`,{exact:true}).waitFor();
   await page.goto(base+'/learn/4');
-  await page.locator('#learning-activities article').filter({has:page.locator('a[href="/builder?module=4&challenge=m4-challenge"]')}).getByText('✓ Completed',{exact:true}).waitFor();
+  await page.locator(':is(#learning-activities, #lesson-challenges) article').filter({has:page.locator('a[href="/builder?module=4&challenge=m4-challenge"]')}).getByText('✓ Completed',{exact:true}).waitFor();
 });
 for(const [id,label] of definitions.filter(d=>d.id!=='m4-challenge').map(d=>[d.id,`${d.id}: ${d.title}`])){
   test(label,async()=>{

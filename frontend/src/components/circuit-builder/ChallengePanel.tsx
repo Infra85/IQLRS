@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { apiFetch, type CircuitRequest, type CircuitResult } from '@/lib/api';
 import { ChallengeFeedback, PredictionComparison } from "./ChallengeFeedback";
 import { parseValidationResult, circuitIdentity, validPrediction, type ActivityDetail, type Comparison, type ValidationResult } from '@/lib/learning-challenges';
+import { JourneyReturn } from '@/app/learn/components/LessonJourney';
 import { Button } from '@/components/ui/button';
 
 export type ChallengeHandle = { run: () => Promise<void> };
@@ -47,6 +48,7 @@ export const ChallengePanel=forwardRef<ChallengeHandle,Props>(function Challenge
         setCommitted({revision:detail.workspace.revision,identity:circuitIdentity(c),prediction:JSON.stringify(v)});
         setRan(!!detail.workspace.execution);
         setComparison(detail.workspace.comparison);
+        if(detail.workspace.feedback)setFeedback(parseValidationResult(detail.workspace.feedback));
         if(detail.workspace.execution)onResult(detail.workspace.execution.simulation);
       }
       onReady(true,detail.definition.kind==='conceptual');
@@ -127,6 +129,7 @@ export const ChallengePanel=forwardRef<ChallengeHandle,Props>(function Challenge
     {comparison&&clean&&<p className="text-slate-300 leading-7">{d.reflection}</p>}
     {feedback&&clean&&<ChallengeFeedback feedback={feedback} />}
 
+    <JourneyReturn moduleId={d.moduleId} activityId={d.id} completed={!!data?.completed} />
     <details><summary className="cursor-pointer">Attempt history ({data?.history.length??0})</summary><p className="text-sm">Historical submissions are preserved when you retry or reset.</p><ul>{data?.history.map(a=><li className="py-2" key={a.id}>Attempt {a.number} · {a.passed?'✓ Passed':'↻ '+a.status} · Hints {a.hintsUsed} · Score {a.score} <Button variant="secondary" disabled={busy} onClick={()=>action(async()=>{const past=await apiFetch(`${base}/attempts/${a.number}`);load(past.circuit);setValues(Object.fromEntries(Object.entries(past.prediction).map(([k,v])=>[k,String(v)])));retry()})}>Restore circuit and prediction</Button></li>)}</ul></details>
   </section>;
 });

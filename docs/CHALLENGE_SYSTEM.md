@@ -315,3 +315,97 @@ color-only status indicators are used. Native inputs, buttons, details/summary,
 labels and status/alert regions provide keyboard access and readable feedback.
 Final measured test counts, recovery classifications, changed files and remaining
 limitations are in [the Phase 2 recovery report](PHASE2_RECOVERY_REPORT.md).
+
+## Guided lesson orchestration (Phase 3)
+
+The reusable lesson journey composes the existing curriculum and activity engine.
+`services/lesson_journey.py` produces each module's sequence from its objectives,
+section order, experiment IDs and challenge IDs: readings → experiment → reflection
+→ quiz → challenge. No module-specific correctness rules live in the frontend.
+For Modules 1–8 this gives nine steps each. The existing prediction, simulation,
+comparison, explanation, hints and validation remain inside the activity panel.
+Conceptual Shor skips quantum execution and uses the existing reasoning validator.
+
+`LessonJourney` wraps the existing lesson content without changing `/learn/{id}`
+or its section anchors. Reading acknowledgements lead directly to the next step.
+The builder saves its location, restores committed predictions/results and current
+attempt feedback, and offers **Continue lesson** after success. Experiment return
+links lead to reflection; challenge return links lead to remaining steps or the
+module-completion summary. The quiz offers the next guided activity after grading.
+The curriculum index and dashboard show full guided completion separately from
+legacy quiz progress, with resume and prerequisite-aware next-module navigation.
+Prerequisites are recommendations; direct lesson/activity URLs remain usable.
+
+### Progress and migration contract
+
+Migration `0004_lesson_journey`, after `0003_learning_challenges`, adds one nullable
+JSONB column to the existing `module_progress` table. It creates no new persistence
+layer and modifies no grades. Fresh and integer-legacy bootstrap can create this
+existing table with the column; the migration uses `ADD COLUMN IF NOT EXISTS`.
+The entrypoint remains transactional and repeatable. Downgrading 0004 removes only
+reading/cursor metadata; it would lose those acknowledgements and is tested only
+on disposable databases. Deployment requires migration before application traffic.
+
+The JSON contains curriculum version, bounded valid started/completed step IDs and
+current step ID. Only reading and reflection steps accept completion writes.
+Reflection requires a successful experiment attempt. Activity success derives from
+`ChallengeAttempt.passed`; quiz success derives from a perfect submitted assessment
+or the preserved legacy 100% quiz progress. Reading identities are scoped to
+`curriculumVersion`; authors changing sections must bump it. Historical attempts
+and quiz scores are never reset by version changes or retries.
+
+A run alone does not complete an experiment. Validation must pass. A failed latest
+attempt yields **Retry needed**; committing a new revision yields **In progress**.
+Any historical success remains complete after later retries. Overall completion
+requires all steps; otherwise it is **Not started** or **In progress**. The cursor
+resumes its unfinished step, falling back to the first unfinished step after success.
+Separate tabs serialize writes on the existing user row, merge acknowledgements,
+and cannot overwrite each other's completions. Writes acknowledge only after commit;
+a failed save leaves the UI incomplete and offers retry. Explicit reading/reflection
+acknowledgements do not purport to measure comprehension.
+
+The existing `/api/progress/me`, quiz response fields and dashboard quiz totals
+retain their old meanings for compatibility. Use the journey endpoint for full
+module completion. Dashboard UI labels distinguish these measures; recent activity
+uses guided status and direct lesson links for bundled modules.
+
+| Endpoint | Contract |
+|---|---|
+| `GET /api/progress/lessons/{number}/sequence` | Public, metadata-derived sequence; no learner data |
+| `GET /api/progress/journey` | Authenticated user's eight module snapshots, step states, counts, resume and prerequisite recommendations |
+| `PUT /api/progress/lessons/{number}/journey` | Authenticated `{step_id, action: "start" or "complete"}`; validates step membership and permitted completion type |
+
+Sign-in is required for persistence. Unsubmitted quiz answers and edits after the
+last prediction commitment are not autosaved. Existing builder bounds, history
+limits and scientific semantics are unchanged.
+
+### Phase 3 verification recipe
+
+Use a dedicated **UTF-8** disposable PostgreSQL database, never learner data. Run
+migration and backend checks using the [repository commands](../AGENTS.md#testing-and-local-commands).
+`backend/tests/test_lesson_journey.py` covers all eight sequences, completion authority,
+resume, ownership, retries, concurrent acknowledgements, old quiz recognition and
+populated Phase 2 migration/replay. The full suite also exercises fresh and integer
+legacy migrations and preservation of assessment/saved-circuit history.
+
+From `frontend/`, run `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`.
+Start the API against the isolated DB and production frontend as documented above.
+Provision a new verified test learner through the existing auth model. Supply its
+token privately as `JOURNEY_TOKEN`; the all-eight sequence test requires a fresh
+learner and must not reuse a completed account.
+
+```bash
+# NODE_PATH should point to a local Playwright installation.
+# The script uses system Chrome unless CHROME_PATH is set.
+NODE_PATH=/tmp/iqlrs-journey-browser/node_modules \
+  node frontend/tests/browser/lesson-journey.cjs
+```
+
+`JOURNEY_URL` defaults to `http://127.0.0.1:13002`. The script walks all eight full
+sequences using UI controls and real APIs, reloads each validated activity, resumes
+a committed prediction after lesson navigation, checks a failed quiz/retry,
+simulates a failed progress save, verifies the loading-link regression, and checks
+390px mobile overflow. It respects the existing 429 retry interval. Screenshots
+are written under `/tmp/iqlrs-journey-*.png`. Run existing challenge and curriculum
+browser recipes too; they retain historical URL and freeform-builder coverage.
+Measured results and file inventory are in [PROJECT_STATE.md](PROJECT_STATE.md).

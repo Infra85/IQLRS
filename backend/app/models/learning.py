@@ -12,7 +12,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -166,6 +166,9 @@ class LearningModule(Base):
 
 class ModuleProgress(Base):
     __tablename__ = "module_progress"
+
+    # Additive reading acknowledgements and resume cursor; grades stay in attempts.
+    journey: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     progress_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),

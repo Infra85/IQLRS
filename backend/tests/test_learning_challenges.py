@@ -570,7 +570,7 @@ def test_full_migration_entrypoint_from_integer_legacy_schema(sessions, monkeypa
             connection.execute(
                 text("SELECT version_num FROM alembic_version")
             ).scalar_one()
-            == "0003_learning_challenges"
+            == "0004_lesson_journey"
         )
 
 

@@ -150,6 +150,7 @@ def detail(
             "circuit": w.circuit,
             "prediction": w.prediction,
             "execution": w.execution,
+            "feedback": next((a.result for a in rows if a.revision == w.revision), None),
             "comparison": comparison(d, w.prediction, w.execution)
             if w.execution
             else None,

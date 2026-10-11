@@ -86,6 +86,14 @@ progress and historical attempt scores are retained. No schema migration or data
 rebuild is needed. Deploy the matching generated frontend curriculum; see the
 [curriculum review](CURRICULUM_SCIENTIFIC_REVIEW.md#data-flow-compatibility-and-deployment).
 
+Curriculum Phase 2/3 additionally requires Alembic upgrades through
+`0004_lesson_journey`: activity workspaces/attempts and the nullable JSONB journey
+field on `module_progress`. Run the same `python -m app.migrate` entrypoint before
+serving the matching application. These upgrades preserve old quiz percentages,
+attempts and circuit history; full guided completion is derived separately. Use
+UTF-8 databases for scientific curriculum text. See the
+[guided lesson contract](CHALLENGE_SYSTEM.md#guided-lesson-orchestration-phase-3).
+
 For the original integer-ID schema it copies records into the UUID models with
 deterministic primary/foreign-key mappings. Password hashes and verified flags
 are preserved. Original tables, including columns absent from the new models,
